@@ -23,6 +23,28 @@ function escapeHtml(value = '') {
   }[ch]));
 }
 
+const FULL_ACTION_PLAN_TITLE = 'Full Action Plan — All Priority 1-3 Recommendations';
+const FULL_ACTION_PLAN = [
+  {
+    priority: 'Priority 1 — Immediate action',
+    title: 'Increase workforce in Zone B',
+    detail: 'Drainage crew is running 34% below the staffing plan for this stage. Additional labor directly targets the bottleneck.',
+    impact: 'Expected recovery: approximately 2 days.'
+  },
+  {
+    priority: 'Priority 2 — Schedule recovery',
+    title: 'Reallocate excavator from Zone D',
+    detail: 'Zone D is ahead of schedule and can release equipment without risk to its own timeline.',
+    impact: 'Expected improvement: approximately 14% productivity.'
+  },
+  {
+    priority: 'Priority 3 — Prevent downstream delay',
+    title: 'Prioritize material delivery, Segment 07',
+    detail: 'Aggregate delivery is trending two days behind consumption rate, which risks stalling Road Base downstream.',
+    impact: 'Expected result: reduced downstream schedule risk.'
+  }
+];
+
 async function sendActionEmail({ managerName, managerEmail, priority, remarks, recTitle }) {
   if (!isEmailConfigured()) throw new Error('Email delivery is not configured.');
 
@@ -40,16 +62,31 @@ async function sendActionEmail({ managerName, managerEmail, priority, remarks, r
     socketTimeout: 30000
   });
 
+  const isFullActionPlan = recTitle === FULL_ACTION_PLAN_TITLE;
+  const recommendationHtml = isFullActionPlan
+    ? `<h3 style="margin:24px 0 12px">Complete recommended action plan</h3>
+       ${FULL_ACTION_PLAN.map(item => `<div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:16px;margin:12px 0">
+         <div style="font-size:11px;color:#2563eb;font-weight:bold">${escapeHtml(item.priority)}</div>
+         <h3 style="margin:6px 0">${escapeHtml(item.title)}</h3>
+         <p style="margin:6px 0">${escapeHtml(item.detail)}</p>
+         <p style="margin:6px 0"><b>${escapeHtml(item.impact)}</b></p>
+       </div>`).join('')}`
+    : `<div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:18px;margin:20px 0">
+         <div style="font-size:11px;color:#2563eb;font-weight:bold">${escapeHtml(priority)}</div>
+         <h3>${escapeHtml(recTitle)}</h3>
+         ${remarks ? `<p><b>Directive remarks:</b> ${escapeHtml(remarks)}</p>` : ''}
+       </div>`;
+  const recommendationText = isFullActionPlan
+    ? FULL_ACTION_PLAN.map(item => `${item.priority}\n${item.title}\n${item.detail}\n${item.impact}`).join('\n\n')
+    : `SitePulse action plan: ${recTitle}\nPriority: ${priority}\n${remarks || ''}`;
+
   const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#1e293b;background:#f8fafc;padding:20px">
     <div style="max-width:600px;margin:auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:28px">
       <h2>SitePulse — Project Directive Notification</h2>
       <p>Hello <b>${escapeHtml(managerName)}</b>,</p>
       <p>The following schedule recovery action plan was dispatched from SitePulse.</p>
-      <div style="background:#eff6ff;border-left:4px solid #3b82f6;padding:18px;margin:20px 0">
-        <div style="font-size:11px;color:#2563eb;font-weight:bold">${escapeHtml(priority)}</div>
-        <h3>${escapeHtml(recTitle)}</h3>
-        ${remarks ? `<p><b>Directive remarks:</b> ${escapeHtml(remarks)}</p>` : ''}
-      </div>
+      ${recommendationHtml}
+      ${isFullActionPlan && remarks ? `<p><b>Manager notes:</b> ${escapeHtml(remarks)}</p>` : ''}
       <p style="font-size:12px;color:#64748b">SIH26122 · SitePulse Infrastructure Intelligence Platform</p>
     </div></body></html>`;
 
@@ -57,7 +94,7 @@ async function sendActionEmail({ managerName, managerEmail, priority, remarks, r
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: managerEmail,
     subject: `[${priority}] SitePulse Action Plan: ${recTitle}`,
-    text: `SitePulse action plan: ${recTitle}\nPriority: ${priority}\n${remarks || ''}`,
+    text: `${recommendationText}${isFullActionPlan && remarks ? `\n\nManager notes: ${remarks}` : ''}`,
     html
   });
 

@@ -1,6 +1,13 @@
 /* ============================================================
    LOADER
    ============================================================ */
+// GitHub Pages serves this static frontend separately from the Node API.
+// Local and Render-hosted pages retain same-origin API calls.
+const API_BASE_URL = window.location.hostname.endsWith('.github.io')
+  ? 'https://sitepulse-56ch.onrender.com'
+  : '';
+const apiUrl = path => `${API_BASE_URL}${path}`;
+
 (function(){
   const lines = document.querySelectorAll('.loader-line');
   const fill = document.getElementById('loaderBarFill');
@@ -619,7 +626,7 @@ document.getElementById('managerEmailForm').addEventListener('submit', async (e)
   let serverMessage;
 
   try {
-    const response = await fetch('/api/send-email', {
+    const response = await fetch(apiUrl('/api/send-email'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -744,7 +751,7 @@ function buildActivitySelector(){
     document.getElementById('plannedStart').value = option.dataset.start || '';
     document.getElementById('plannedEnd').value = option.dataset.end || '';
   });
-  fetch('/api/activities')
+  fetch(apiUrl('/api/activities'))
     .then(response => response.ok ? response.json() : Promise.reject(new Error('Activity API unavailable')))
     .then(activities => renderActivityOptions(activities.map(row => [
       row.activity_id, row.activity_name, String(row.planned_start_date).slice(0, 10), String(row.planned_end_date).slice(0, 10)
@@ -845,7 +852,7 @@ async function buildSiteReport(){
   });
 
   try {
-    const response = await fetch('/api/assessments', {
+    const response = await fetch(apiUrl('/api/assessments'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
