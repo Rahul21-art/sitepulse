@@ -127,6 +127,9 @@ function emailErrorMessage(error) {
   if (error?.code === 'EAUTH') {
     return 'Gmail rejected the SMTP sign-in. Generate a new Gmail App Password and update SMTP_PASS.';
   }
+  if (error?.code === 'ERESEND') {
+    return error.message || 'Resend could not accept the email request. Check RESEND_API_KEY and RESEND_FROM.';
+  }
   if (['ETIMEDOUT', 'ECONNECTION', 'ESOCKET'].includes(error?.code)) {
     return 'The server could not connect to Gmail SMTP. Check the network and SMTP host/port settings.';
   }
@@ -187,7 +190,7 @@ async function handleApi(req, res, url) {
     if (!isEmailConfigured()) {
       return json(res, 503, {
         success: false,
-        error: 'Email delivery is not configured on the server. Set SMTP_* variables in .env.'
+        error: 'Email delivery is not configured on the server. Set RESEND_API_KEY and RESEND_FROM, or SMTP_* variables.'
       });
     }
 

@@ -10,10 +10,11 @@ try {
 function isEmailConfigured() {
   const smtpPassword = String(process.env.SMTP_PASS || '').replace(/\s+/g, '');
   return Boolean(
-    nodemailer &&
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    smtpPassword
+    process.env.RESEND_API_KEY ||
+    (nodemailer &&
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      smtpPassword)
   );
 }
 
@@ -89,6 +90,49 @@ async function sendActionEmail({ managerName, managerEmail, priority, remarks, r
       ${isFullActionPlan && remarks ? `<p><b>Manager notes:</b> ${escapeHtml(remarks)}</p>` : ''}
       <p style="font-size:12px;color:#64748b">SIH26122 · SitePulse Infrastructure Intelligence Platform</p>
     </div></body></html>`;
+
+  // Render Free blocks outbound SMTP ports. Resend uses HTTPS, which works on
+  // that plan. Keep SMTP as a fallback for local development or paid hosting.
+  if (process.env.RESEND_API_KEY) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    let response;
+    let data;
+    try {
+      response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'sitepulse/1.0'
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM || process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: [managerEmail],
+          subject: `[${priority}] SitePulse Action Plan: ${recTitle}`,
+          text: `${recommendationText}${isFullActionPlan && remarks ? `\n\nManager notes: ${remarks}` : ''}`,
+          html
+        }),
+        signal: controller.signal
+      });
+      data = await response.json().catch(() => ({}));
+    } catch (cause) {
+      const error = new Error('Could not reach the Resend email API.');
+      error.code = 'ERESEND';
+      error.cause = cause;
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok || !data.id) {
+      const error = new Error(data.message || 'Resend did not accept this email request.');
+      error.code = 'ERESEND';
+      error.statusCode = 502;
+      throw error;
+    }
+    return { recipient: managerEmail, messageId: data.id, providerResponse: 'Resend accepted the email.' };
+  }
 
   const info = await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,

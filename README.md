@@ -58,6 +58,19 @@ SMTP_PASS=your-16-character-app-password
 SMTP_FROM=your-account@gmail.com
 ```
 
+### Resend (recommended for Render Free)
+
+Render Free blocks outbound SMTP ports, so configure these environment variables
+instead of SMTP for the deployed backend. Resend sends through its HTTPS API.
+
+```env
+RESEND_API_KEY=re_your_api_key
+RESEND_FROM=SitePulse <notifications@your-verified-domain.com>
+```
+
+Verify the sender domain in Resend before deploying. The backend automatically
+prefers Resend whenever `RESEND_API_KEY` is set.
+
 The browser sends only the recipient and message data. SMTP credentials never leave the backend.
 
 ## Production deployment
