@@ -10,6 +10,9 @@ try {
 function isEmailConfigured() {
   const smtpPassword = String(process.env.SMTP_PASS || '').replace(/\s+/g, '');
   return Boolean(
+    (process.env.EMAILJS_SERVICE_ID &&
+      process.env.EMAILJS_TEMPLATE_ID &&
+      process.env.EMAILJS_PUBLIC_KEY) ||
     process.env.RESEND_API_KEY ||
     (nodemailer &&
       process.env.SMTP_HOST &&
@@ -90,6 +93,53 @@ async function sendActionEmail({ managerName, managerEmail, priority, remarks, r
       ${isFullActionPlan && remarks ? `<p><b>Manager notes:</b> ${escapeHtml(remarks)}</p>` : ''}
       <p style="font-size:12px;color:#64748b">SIH26122 · SitePulse Infrastructure Intelligence Platform</p>
     </div></body></html>`;
+
+  // EmailJS sends through HTTPS and its Gmail connector, so it works from
+  // Render Free without exposing the connected Gmail credentials to this app.
+  if (process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PUBLIC_KEY) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    let response;
+    let responseText;
+    try {
+      response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'sitepulse/1.0'
+        },
+        body: JSON.stringify({
+          service_id: process.env.EMAILJS_SERVICE_ID,
+          template_id: process.env.EMAILJS_TEMPLATE_ID,
+          user_id: process.env.EMAILJS_PUBLIC_KEY,
+          template_params: {
+            manager_email: managerEmail,
+            name: managerName,
+            email: process.env.EMAILJS_REPLY_TO || process.env.SMTP_FROM || process.env.SMTP_USER || '',
+            subject: `[${priority}] SitePulse Action Plan: ${recTitle}`,
+            html
+          }
+        }),
+        signal: controller.signal
+      });
+      responseText = await response.text();
+    } catch (cause) {
+      const error = new Error('Could not reach the EmailJS delivery API.');
+      error.code = 'EEMAILJS';
+      error.cause = cause;
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      const error = new Error(responseText || 'EmailJS did not accept this email request.');
+      error.code = 'EEMAILJS';
+      error.statusCode = 502;
+      throw error;
+    }
+    return { recipient: managerEmail, messageId: `emailjs-${Date.now()}`, providerResponse: responseText || 'EmailJS accepted the email.' };
+  }
 
   // Render Free blocks outbound SMTP ports. Resend uses HTTPS, which works on
   // that plan. Keep SMTP as a fallback for local development or paid hosting.

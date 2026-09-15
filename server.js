@@ -130,6 +130,9 @@ function emailErrorMessage(error) {
   if (error?.code === 'ERESEND') {
     return error.message || 'Resend could not accept the email request. Check RESEND_API_KEY and RESEND_FROM.';
   }
+  if (error?.code === 'EEMAILJS') {
+    return error.message || 'EmailJS could not accept the email request. Check the EmailJS service and template settings.';
+  }
   if (['ETIMEDOUT', 'ECONNECTION', 'ESOCKET'].includes(error?.code)) {
     return 'The server could not connect to Gmail SMTP. Check the network and SMTP host/port settings.';
   }
@@ -190,7 +193,7 @@ async function handleApi(req, res, url) {
     if (!isEmailConfigured()) {
       return json(res, 503, {
         success: false,
-        error: 'Email delivery is not configured on the server. Set RESEND_API_KEY and RESEND_FROM, or SMTP_* variables.'
+        error: 'Email delivery is not configured on the server. Configure EmailJS, Resend, or SMTP variables.'
       });
     }
 

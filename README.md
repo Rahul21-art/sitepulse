@@ -71,6 +71,22 @@ RESEND_FROM=SitePulse <notifications@your-verified-domain.com>
 Verify the sender domain in Resend before deploying. The backend automatically
 prefers Resend whenever `RESEND_API_KEY` is set.
 
+### EmailJS with Gmail (free, low-volume)
+
+To send to arbitrary recipients without a custom domain, connect Gmail in
+EmailJS, create a template whose To Email field is `{{manager_email}}`, and
+set the following backend variables. The backend passes the complete HTML
+action plan to the template's `{{{html}}}` content placeholder.
+
+```env
+EMAILJS_SERVICE_ID=service_xxxxxxx
+EMAILJS_TEMPLATE_ID=template_xxxxxxx
+EMAILJS_PUBLIC_KEY=your_emailjs_public_key
+EMAILJS_REPLY_TO=your-gmail-address@gmail.com
+```
+
+EmailJS is preferred whenever all three EmailJS identifiers are configured.
+
 The browser sends only the recipient and message data. SMTP credentials never leave the backend.
 
 ## Production deployment

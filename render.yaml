@@ -42,6 +42,14 @@ services:
         sync: false
       - key: RESEND_FROM
         sync: false
+      - key: EMAILJS_SERVICE_ID
+        sync: false
+      - key: EMAILJS_TEMPLATE_ID
+        sync: false
+      - key: EMAILJS_PUBLIC_KEY
+        sync: false
+      - key: EMAILJS_REPLY_TO
+        sync: false
 
 databases:
   - name: sitepulse-db
