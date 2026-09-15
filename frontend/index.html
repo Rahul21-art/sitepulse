@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="SitePulse infrastructure intelligence platform for construction schedule monitoring, site assessment and project reporting.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>SitePulse — Intelligent Data Capture &amp; Schedule-Linking Layer</title>
+<meta name="description" content="An intelligent data capture and schedule-linking layer for real-world infrastructure projects." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<link rel="stylesheet" href="/css/sitepulse.css">
+
+</head>
+<body>
+
+<!-- ============ LOADER ============ -->
+<div id="loader">
+  <div class="brand-mark" style="width:26px;height:26px;">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M3 17L9 9L14 13L21 4" stroke="#4f8ef7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21" cy="4" r="2" fill="#5eead4"/></svg>
+  </div>
+  <div class="loader-word">INITIALIZING <b>SITEPULSE</b> INTELLIGENCE LAYER</div>
+  <div class="loader-lines" id="loaderLines">
+    <div class="loader-line" data-t="420"><span>DATA SOURCES</span><span class="status">···</span></div>
+    <div class="loader-line" data-t="420"><span>DIGITAL TWIN</span><span class="status">···</span></div>
+    <div class="loader-line" data-t="420"><span>SCHEDULE ENGINE</span><span class="status">···</span></div>
+    <div class="loader-line" data-t="420"><span>AI ENGINE</span><span class="status">···</span></div>
+  </div>
+  <div class="loader-bar"><i id="loaderBarFill"></i></div>
+</div>
+
+<!-- ============ NAV ============ -->
+<nav id="nav">
+  <a href="#top" class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 17L9 9L14 13L21 4" stroke="#4f8ef7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21" cy="4" r="2" fill="#5eead4"/></svg>
+    </div>
+    <div class="brand-name">Site<span>Pulse</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="#twin">Digital Twin</a>
+    <a href="#capture">Live Capture</a>
+    <a href="#schedule">Schedule</a>
+    <a href="#ai-detect">AI Insights</a>
+    <a href="#report">Reports</a>
+  </div>
+  <div class="nav-right">
+    <button id="siteSearchBtn" class="nav-icon-btn" type="button" aria-label="Search SitePulse"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    <button id="demo-toggle" type="button"><span class="dt-dot"></span> Live Demo Mode</button>
+    <a class="nav-cta new-proj-link" href="#photo-assessment" style="background:var(--signal);color:#ffffff;">+ New Project</a>
+    <a class="nav-cta" href="#twin">Explore the Twin</a>
+  </div>
+</nav>
+
+<!-- ============ PINNED STORY (hero + scroll narrative) ============ -->
+<div id="story">
+  <div id="scene-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="scene-vignette"></div>
+    <div class="scene-grain"></div>
+
+    <div class="story-overlay">
+
+      <!-- Frame 1: HERO -->
+      <div class="story-frame" id="frame1" style="opacity:1;">
+        <div class="hero-eyebrow"><i></i> INTELLIGENT DATA CAPTURE &amp; SCHEDULE-LINKING LAYER</div>
+        <h1 class="hero-title">
+          <span class="line"><span>See the project.</span></span>
+          <span class="line"><span>Know the delay.</span></span>
+          <span class="line"><span>Act before it happens.</span></span>
+        </h1>
+        <p class="hero-sub">SitePulse connects real-world infrastructure progress with the plan that governs it — so deviations surface in days, not at the deadline.</p>
+        <div class="hero-cta-row">
+          <a href="#twin" class="btn-primary">Explore the Digital Twin</a>
+          <a href="#photo-assessment" class="btn-secondary new-proj-link" style="border-color:var(--signal);"><span style="color:var(--signal);font-weight:700;">+</span> New Project</a>
+          <button class="btn-secondary" id="watchDemoBtn"><span class="dot"></span> Watch Live Demo</button>
+        </div>
+        <div class="hero-scroll-cue"><span>SCROLL</span><div class="track"><i></i></div></div>
+      </div>
+
+      <!-- Frame 2: THE PLAN -->
+      <div class="story-frame" id="frame2">
+        <div class="n-frame">
+          <div class="n-kicker">01 — THE PLAN</div>
+          <h2 class="n-title">Every zone starts with a schedule everyone agreed to.</h2>
+          <div class="readout-row">
+            <div class="readout"><div class="rlabel">ZONE A · PLANNED</div><div class="rval signal">100%</div><div class="rsub">by Day 10</div></div>
+            <div class="readout"><div class="rlabel">ZONE B · PLANNED</div><div class="rval signal">100%</div><div class="rsub">by Day 12</div></div>
+            <div class="readout"><div class="rlabel">ZONE C · PLANNED</div><div class="rval signal">100%</div><div class="rsub">by Day 14</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frame 3: REALITY -->
+      <div class="story-frame" id="frame3">
+        <div class="n-frame">
+          <div class="n-kicker">02 — REALITY</div>
+          <h2 class="n-title">Site data starts telling a <em class="warn">different</em> story.</h2>
+          <div class="readout-row">
+            <div class="readout"><div class="rlabel">DAY 05 · EXPECTED</div><div class="rval">50%</div></div>
+            <div class="readout"><div class="rlabel">DAY 05 · ACTUAL</div><div class="rval warn">37%</div><div class="rsub">−13% below plan</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frame 4: DEVIATION -->
+      <div class="story-frame" id="frame4">
+        <div class="n-frame">
+          <div class="n-kicker">03 — THE DEVIATION</div>
+          <h2 class="n-title">The gap widens into a <em class="crit">measurable delay.</em></h2>
+          <div class="readout-row">
+            <div class="readout"><div class="rlabel">SCHEDULE IMPACT</div><div class="rval crit">+5 DAYS</div></div>
+            <div class="readout"><div class="rlabel">ORIGINAL COMPLETION</div><div class="rval">Day 10</div></div>
+            <div class="readout"><div class="rlabel">PROJECTED COMPLETION</div><div class="rval warn">Day 15</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frame 5: AI DETECTION -->
+      <div class="story-frame" id="frame5">
+        <div class="n-frame">
+          <div class="n-kicker">04 — AI DETECTION</div>
+          <h2 class="n-title"><em class="ai">AI</em> flags the deviation before it becomes a crisis.</h2>
+          <div class="readout-row">
+            <div class="readout"><div class="rlabel">DEVIATION</div><div class="rval crit">DETECTED</div></div>
+            <div class="readout"><div class="rlabel">CONFIDENCE</div><div class="rval ai">94%</div></div>
+            <div class="readout"><div class="rlabel">RISK LEVEL</div><div class="rval crit">HIGH</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frame 6: ACTION -->
+      <div class="story-frame" id="frame6">
+        <div class="n-frame">
+          <div class="n-kicker">05 — CORRECTIVE ACTION</div>
+          <h2 class="n-title">The manager acts <em>while there's still time to recover.</em></h2>
+          <div class="action-row">
+            <div class="action-chip"><i></i> Increase workforce in Zone B</div>
+            <div class="action-chip"><i></i> Reallocate equipment from Zone D</div>
+            <div class="action-chip"><i></i> Review material delivery, Segment 07</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ COMMAND CENTER ============ -->
+<section class="panel" id="command">
+  <div class="cc-top">
+    <div class="panel-head" style="margin-bottom:0;">
+      <div class="eyebrow"><i></i> PROJECT COMMAND CENTER</div>
+      <h2 class="panel-title">Residential Building Construction</h2>
+      <p class="panel-desc">Multi-storey building project — synthesized from blueprint, site photographs, field updates and verified progress records.</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div class="cc-select" id="ccActiveProj">Active project: <b>SIH26122 / Building A</b></div>
+      <a href="#photo-assessment" class="btn-primary new-proj-link" style="font-size:12.5px;padding:9px 16px;background:var(--signal);color:#fff;">+ New Project</a>
+    </div>
+  </div>
+  <div class="cc-metrics reveal">
+    <div class="cc-metric good">
+      <div class="m-label">PROJECT HEALTH</div>
+      <div class="m-value"><span class="counter" id="ccHealthVal" data-to="92">92</span><span class="unit">%</span></div>
+      <div class="m-tag" id="ccHealthTag"><i></i> On track</div>
+    </div>
+    <div class="cc-metric">
+      <div class="m-label">ACTIVE PROJECTS</div>
+      <div class="m-value"><span class="counter" id="ccActiveVal" data-to="24">24</span></div>
+      <div class="m-tag"><i style="background:var(--signal)"></i> 6 regions</div>
+    </div>
+    <div class="cc-metric warn">
+      <div class="m-label">AT-RISK ZONES</div>
+      <div class="m-value"><span class="counter" id="ccAtriskVal" data-to="7">7</span></div>
+      <div class="m-tag"><i></i> Needs review</div>
+    </div>
+    <div class="cc-metric crit">
+      <div class="m-label">DETECTED DELAYS</div>
+      <div class="m-value"><span class="counter" id="ccDelaysVal" data-to="3">3</span></div>
+      <div class="m-tag"><i></i> Confirmed by AI</div>
+    </div>
+    <div class="cc-metric ai">
+      <div class="m-label">PREDICTED IMPACT</div>
+      <div class="m-value" id="ccImpactVal">+<span class="counter" data-to="5">5</span><span class="unit">days</span></div>
+      <div class="m-tag"><i></i> Live analysis</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DIGITAL TWIN ============ -->
+<section class="panel" id="twin">
+  <div class="panel-head reveal">
+    <div class="eyebrow"><i></i> 3D DIGITAL TWIN</div>
+    <h2 class="panel-title">Walk the site without leaving the office.</h2>
+    <p class="panel-desc">Every zone in the model is wired to its own progress, schedule and risk data. Select a zone to inspect what's actually happening there.</p>
+  </div>
+
+  <div class="twin-grid reveal">
+    <div class="twin-canvas-box">
+      <canvas id="twin-canvas"></canvas>
+      <div class="twin-hint">DRAG TO ORBIT · CLICK A ZONE</div>
+    </div>
+    <div class="twin-info">
+      <div class="twin-zone-head">
+        <div>
+          <div class="twin-zone-name" id="tz-name">Zone B</div>
+          <div class="twin-zone-sub" id="tz-sub">Road Segment 04</div>
+        </div>
+        <div class="risk-pill high" id="tz-risk">HIGH RISK</div>
+      </div>
+      <div class="twin-stats">
+        <div class="twin-stat"><div class="ts-label">PLANNED PROGRESS</div><div class="ts-val" id="tz-planned">68%</div></div>
+        <div class="twin-stat"><div class="ts-label">ACTUAL PROGRESS</div><div class="ts-val" id="tz-actual">51%</div></div>
+        <div class="twin-stat"><div class="ts-label">DEVIATION</div><div class="ts-val crit" id="tz-dev">−17%</div></div>
+        <div class="twin-stat"><div class="ts-label">PREDICTED DELAY</div><div class="ts-val warn" id="tz-delay">5 days</div></div>
+      </div>
+      <div class="twin-rec">
+        <div class="tr-label">RECOMMENDED ACTION</div>
+        <p id="tz-action">Increase workforce by 20% and reallocate one excavator from Zone D to restore the drainage sub-schedule.</p>
+      </div>
+      <div class="zone-picker" id="zonePicker"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LIVE DATA CAPTURE ============ -->
+<section class="panel" id="capture">
+  <div class="panel-head reveal">
+    <div class="eyebrow"><i></i> LIVE PROGRESS CAPTURE</div>
+    <h2 class="panel-title">Six data sources. One intelligent layer.</h2>
+    <p class="panel-desc">Drone imagery, sensors and manual reports all resolve to the same schedule — automatically, continuously.</p>
+  </div>
+
+  <div class="flow-wrap reveal">
+    <div class="flow-col">
+      <div class="flow-col-title">SOURCES</div>
+      <div class="flow-node active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2L4 7v10l8 5 8-5V7l-8-5z"/></svg>Drone survey</div>
+      <div class="flow-node active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M3 12h4M17 12h4M12 3v4M12 17v4"/></svg>IoT sensors</div>
+      <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>Site camera</div>
+      <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21c4-4 7-7.5 7-11a7 7 0 10-14 0c0 3.5 3 7 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>GPS / equipment</div>
+      <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16M4 12h16M4 19h9"/></svg>Manual site report</div>
+    </div>
+
+    <div class="flow-arrow"><i></i></div>
+
+    <div class="flow-core">
+      <div class="fc-ring"></div>
+      <b>Intelligent<br/>Data Layer</b>
+      <span>NORMALIZING</span>
+    </div>
+
+    <div class="flow-arrow"><i></i></div>
+
+    <div class="flow-col">
+      <div class="flow-col-title">RESOLUTION</div>
+      <div class="flow-node active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17l6-6 4 4 8-9"/></svg>Progress detection</div>
+      <div class="flow-node active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3 8-8M21 12a9 9 0 11-6.219-8.56"/></svg>Zone match</div>
+      <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 7V3m8 4V3M3 11h18M5 7h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2z"/></svg>Schedule link</div>
+      <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4m0 4h.01M4.93 4.93l14.14 14.14"/><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>Delay detected</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PHOTO ASSESSMENT ============ -->
+<section class="panel" id="photo-assessment">
+  <div class="panel-head reveal">
+    <div class="eyebrow"><i></i> PHOTO-BASED SITE ASSESSMENT</div>
+    <h2 class="panel-title">Compare the plan with what is on site.</h2>
+    <p class="panel-desc">Upload the approved blueprint and the latest site photograph to prepare a review-ready assessment for the matching work area.</p>
+  </div>
+
+  <div class="assessment-grid reveal">
+    <div class="upload-card">
+      <h3>01 — Blueprint / planned work</h3>
+      <p>Upload the relevant drawing, plan, or marked-up blueprint.</p>
+      <label class="upload-label" for="blueprintInput">Choose blueprint image</label>
+      <input id="blueprintInput" type="file" accept="image/*" />
+      <img id="blueprintPreview" class="upload-preview" alt="Blueprint preview" />
+      <div id="blueprintFile" class="upload-file">No file selected</div>
+    </div>
+    <div class="upload-card">
+      <h3>02 — Current site condition</h3>
+      <p>Upload a current, clear photograph of the matching work area.</p>
+      <label class="upload-label" for="sitePhotoInput">Choose site photo</label>
+      <input id="sitePhotoInput" type="file" accept="image/*" />
+      <img id="sitePhotoPreview" class="upload-preview" alt="Current site preview" />
+      <div id="sitePhotoFile" class="upload-file">No file selected</div>
+    </div>
+  </div>
+
+  <div class="panel-head reveal" style="margin-top:44px;margin-bottom:18px;">
+    <div class="eyebrow"><i></i> SCHEDULE BASELINE</div>
+    <h3 style="font:600 21px var(--display);margin:0 0 8px;">Dates come from the plan, not the photo.</h3>
+    <p class="panel-desc">Set the activity baseline and enter the latest verified completion percentage. The uploaded images support this update; the date calculation uses the project schedule.</p>
+  </div>
+  <div class="assessment-form reveal" id="scheduleBaseline">
+    <select id="plannedActivity" aria-label="Planned activity"><option value="">Select planned activity</option></select>
+    <input id="actualProgress" type="number" min="0" max="100" step="1" placeholder="Verified actual progress (%)" />
+    <input id="plannedStart" type="date" aria-label="Planned start date" />
+    <input id="plannedEnd" type="date" aria-label="Planned completion date" />
+    <input id="progressUpdateDate" type="date" aria-label="Progress update date" />
+    <input id="responsibleEngineer" type="text" placeholder="Verified by (site engineer / manager)" />
+  </div>
+
+  <div class="assessment-form reveal">
+    <input id="assessmentZone" type="text" placeholder="Work area (e.g. Zone B — Drainage)" />
+    <input id="assessmentDate" type="date" aria-label="Assessment date" />
+    <textarea id="siteObservation" placeholder="Optional site observation (e.g. Drainage excavation is complete; pipe laying has not started.)"></textarea>
+  </div>
+  <div class="assessment-actions reveal">
+    <button id="buildSiteReportBtn" class="btn-primary" type="button">Generate site assessment</button>
+    <span class="assessment-note">Blueprint and site images are used as the assessment evidence.</span>
+  </div>
+  <div id="siteReport" class="site-report" role="status" aria-live="polite"></div>
+</section>
+
+<!-- ============ SCHEDULE INTELLIGENCE ============ -->
+<section class="panel" id="schedule">
+  <div class="panel-head reveal">
+    <div class="eyebrow"><i></i> SCHEDULE INTELLIGENCE</div>
+    <h2 class="panel-title">Planned vs. actual, stage by stage.</h2>
+    <p class="panel-desc">Residential building project — planned versus verified progress for each construction activity.</p>
+  </div>
+
+  <div class="gantt reveal" id="ganttList">
+    <!-- rows injected by JS -->
+  </div>
+  <div class="gantt-legend">
+    <span><i style="background:var(--line)"></i> Planned</span>
+    <span><i style="background:var(--signal)"></i> On track</span>
+    <span><i style="background:var(--warn)"></i> At risk</span>
+    <span><i style="background:var(--crit)"></i> Behind schedule</span>
+  </div>
+</section>
+
+<!-- ============ AI DELAY DETECTION ============ -->
+<section class="panel" id="ai-detect">
+  <div class="panel-head reveal">
+    <div class="eyebrow"><i></i> AI DELAY DETECTION</div>
+    <h2 class="panel-title">AI sees the deviation before the deadline.</h2>
+    <p class="panel-desc">Every capture is compared against the live schedule baseline. When variance crosses threshold, SitePulse raises it — with a confidence score, not a guess.</p>
+  </div>
+
+  <div class="detect-card reveal">
+    <div class="detect-left">
+      <div class="dc-flag" id="aiFlag"><i></i> DEVIATION DETECTED — ZONE B</div>
+      <h3 id="aiTitle">Drainage sub-schedule is falling behind excavation.</h3>
+      <p id="aiDesc">Actual progress has trailed the plan for six consecutive capture cycles. The model projects this compounds into a corridor-level delay if unaddressed.</p>
+      <div class="detect-compare">
+        <div class="dc-item"><div class="dc-label">EXPECTED</div><div class="dc-val dim" id="aiExpVal">68%</div></div>
+        <div class="dc-item"><div class="dc-label">ACTUAL</div><div class="dc-val crit" id="aiActVal">51%</div></div>
+        <div class="dc-item"><div class="dc-label">IMPACT</div><div class="dc-val crit" id="aiImpVal">+5 days</div></div>
+      </div>
+    </div>
+    <div class="detect-right">
+      <div class="confidence-ring">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="66" fill="none" stroke="var(--line)" stroke-width="8"/>
+          <circle id="confCircle" cx="75" cy="75" r="66" fill="none" stroke="var(--ai)" stroke-width="8" stroke-linecap="round" stroke-dasharray="414.7" stroke-dashoffset="414.7"/>
+        </svg>
+        <div class="cr-num"><b id="confNum">0%</b><span>CONFIDENCE</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RECOMMENDATIONS ============ -->
+<section class="panel" id="recommendations">
+  <div class="panel-head reveal" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;">
+    <div>
+      <div class="eyebrow"><i></i> AI RECOMMENDATIONS</div>
+      <h2 class="panel-title">What should the project manager do?</h2>
+      <p class="panel-desc">Ranked by expected schedule recovery, not just severity.</p>
+    </div>
+    <button id="emailAllRecsBtn" class="btn-primary" type="button" style="font-size:12.5px;padding:9px 16px;background:var(--signal);color:#fff;display:inline-flex;align-items:center;gap:7px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+      Email Action Plan to Manager
+    </button>
+  </div>
+
+  <div class="rec-grid reveal" id="recGrid">
+    <div class="rec-card">
+      <div class="rec-priority p1">PRIORITY 1</div>
+      <div class="rec-title">Increase workforce in Zone B</div>
+      <div class="rec-reason">Drainage crew is running 34% below the staffing plan for this stage. Additional labor directly targets the bottleneck.</div>
+      <div class="rec-impact">Expected impact: <b>recover ~2 days</b></div>
+      <button class="rec-btn apply-rec" type="button" data-recommendation="Increase workforce in Zone B">Email directive to Manager ✉</button>
+    </div>
+    <div class="rec-card">
+      <div class="rec-priority p2">PRIORITY 2</div>
+      <div class="rec-title">Reallocate excavator from Zone D</div>
+      <div class="rec-reason">Zone D is ahead of schedule and can release equipment without risk to its own timeline.</div>
+      <div class="rec-impact">Expected impact: <b>+14% productivity</b></div>
+      <button class="rec-btn apply-rec" type="button" data-recommendation="Reallocate excavator from Zone D">Email directive to Manager ✉</button>
+    </div>
+    <div class="rec-card">
+      <div class="rec-priority p3">PRIORITY 3</div>
+      <div class="rec-title">Prioritize material delivery, Segment 07</div>
+      <div class="rec-reason">Aggregate delivery is trending 2 days behind consumption rate, which risks stalling Road Base downstream.</div>
+      <div class="rec-impact">Expected impact: <b>reduce downstream risk</b></div>
+      <button class="rec-btn apply-rec" type="button" data-recommendation="Prioritize material delivery, Segment 07">Email directive to Manager ✉</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ALERTS ============ -->
+<section class="panel" id="alerts">
+  <div class="panel-head reveal">
+    <div class="eyebrow"><i></i> ALERT CENTER</div>
+    <h2 class="panel-title">Every signal, ranked by what needs you first.</h2>
+  </div>
+  <div class="alert-list reveal" id="alertList">
+    <div class="alert-item"><div class="alert-sev high">HIGH</div><div class="alert-msg">Zone B is <b>17% behind</b> schedule on the drainage sub-stage.</div><div class="alert-time">14 min ago</div></div>
+    <div class="alert-item"><div class="alert-sev medium">MEDIUM</div><div class="alert-msg">Material delivery may affect <b>Road Segment 07</b> completion.</div><div class="alert-time">2 hr ago</div></div>
+    <div class="alert-item"><div class="alert-sev low">LOW</div><div class="alert-msg">Crew productivity decreased by <b>4%</b> across Corridor 4.</div><div class="alert-time">Yesterday</div></div>
+  </div>
+</section>
+
+<!-- ============ REPORT CTA ============ -->
+<section class="panel" id="report">
+  <div class="report-box reveal">
+    <div class="eyebrow" style="justify-content:center;"><i></i> PROJECT REPORTING</div>
+    <h2 class="panel-title">One report, every stakeholder.</h2>
+    <p class="panel-desc">Progress, schedule variance, detected risks and recommended actions — compiled for the meeting you're walking into.</p>
+    <div class="report-cta">
+      <button id="generateReportBtn" class="btn-primary" type="button">Generate Project Report</button>
+      <a href="#twin" class="btn-secondary" style="gap:0;">Back to Digital Twin</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="brand" style="gap:8px;"><div class="brand-mark" style="width:16px;height:16px;"><svg viewBox="0 0 24 24" fill="none"><path d="M3 17L9 9L14 13L21 4" stroke="#4f8ef7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21" cy="4" r="2" fill="#5eead4"/></svg></div><span>SitePulse — intelligent data capture &amp; schedule-linking layer</span></div>
+  <span>SIH26122 · Site Intelligence Platform</span>
+</footer>
+
+<div id="actionNotice" role="status" aria-live="polite" style="position:fixed;right:24px;bottom:24px;z-index:1000;max-width:360px;padding:14px 18px;border:1px solid var(--signal);border-radius:8px;background:rgba(12,14,18,.96);color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.35);opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .25s ease,transform .25s ease;"></div>
+
+<div id="demo-modal">
+  <div class="demo-panel">
+    <button class="demo-close" id="demoClose">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div class="demo-head">LIVE DEMO — ZONE B TIMELINE</div>
+    <div class="demo-title" id="demoTitle">Day 42 — On track</div>
+
+    <div id="demoStages">
+      <div class="demo-stage active" data-stage="0">
+        <div class="demo-day">DAY 42 OF 120</div>
+        <div class="demo-readouts">
+          <div><b>52%</b><span>EXPECTED</span></div>
+          <div><b>51%</b><span>ACTUAL</span></div>
+        </div>
+        <div class="demo-msg">Zone B is tracking within 1% of plan. No action required.</div>
+      </div>
+      <div class="demo-stage" data-stage="1">
+        <div class="demo-day">DAY 55 OF 120</div>
+        <div class="demo-readouts">
+          <div><b>67%</b><span>EXPECTED</span></div>
+          <div><b>58%</b><span>ACTUAL</span></div>
+        </div>
+        <div class="demo-msg">Variance has grown to −9%. The digital twin flags Zone B for review.</div>
+      </div>
+      <div class="demo-stage" data-stage="2">
+        <div class="demo-day">DAY 58 OF 120</div>
+        <div class="demo-readouts">
+          <div><b>94%</b><span>CONFIDENCE</span></div>
+          <div><b>HIGH</b><span>RISK</span></div>
+        </div>
+        <div class="demo-msg">AI DETECTION — schedule deviation confirmed across six capture cycles.</div>
+      </div>
+      <div class="demo-stage" data-stage="3">
+        <div class="demo-day">PREDICTED COMPLETION</div>
+        <div class="demo-readouts">
+          <div><b>+5</b><span>DAYS IMPACT</span></div>
+          <div><b>Day 127</b><span>NEW ETA</span></div>
+        </div>
+        <div class="demo-msg">Without correction, completion slips from Day 120 to Day 127.</div>
+      </div>
+      <div class="demo-stage" data-stage="4">
+        <div class="demo-day">RECOMMENDATION ISSUED</div>
+        <div class="demo-readouts">
+          <div><b>P1</b><span>PRIORITY</span></div>
+          <div><b>~2d</b><span>RECOVERABLE</span></div>
+        </div>
+        <div class="demo-msg">"Increase workforce in Zone B" — issued to project manager for approval.</div>
+      </div>
+    </div>
+
+    <div class="demo-progress" id="demoProgress"></div>
+    <div class="demo-nav">
+      <button class="btn-secondary" id="demoPrev" style="gap:0;">Back</button>
+      <button class="btn-primary" id="demoNext">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MANAGER EMAIL DISPATCH MODAL ============ -->
+<div id="email-modal" style="position:fixed;inset:0;z-index:950;display:none;align-items:center;justify-content:center;background:rgba(6,7,9,0.82);backdrop-filter:blur(8px);padding:20px;">
+  <div class="demo-panel" style="max-width:540px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-m);padding:32px;position:relative;">
+    <button class="demo-close" id="emailModalClose">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div class="demo-head" style="color:var(--ai);">📧 EMAIL DIRECTIVE TO PROJECT MANAGER</div>
+    <div class="demo-title" style="margin-bottom:14px;font-size:20px;">Dispatch Action Plan</div>
+    
+    <div style="background:var(--surface-2);border:1px solid var(--line-soft);border-radius:6px;padding:12px 16px;margin-bottom:20px;">
+      <div style="font-family:var(--ff-mono);font-size:10.5px;color:var(--text-faint);letter-spacing:0.06em;margin-bottom:4px;">TARGET ACTION ITEM</div>
+      <div id="emailTargetRecTitle" style="font-size:14.5px;font-weight:600;color:var(--text);">Increase workforce in Zone B</div>
+      <div id="emailTargetRecImpact" style="font-size:12px;color:var(--good);margin-top:2px;">Expected impact: recover ~2 days</div>
+    </div>
+
+    <form id="managerEmailForm" style="display:flex;flex-direction:column;gap:14px;" onsubmit="return false;">
+      <div>
+        <label style="display:block;font-family:var(--ff-mono);font-size:11px;color:var(--text-mute);margin-bottom:6px;">PROJECT MANAGER NAME</label>
+        <input id="managerNameInput" type="text" placeholder="e.g. Alex Rivera (Senior Site Manager)" value="Alex Rivera (Site Manager)" required style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:var(--base);padding:11px 14px;color:var(--text);font-size:13.5px;outline:none;" />
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--ff-mono);font-size:11px;color:var(--text-mute);margin-bottom:6px;">RECIPIENT EMAIL ADDRESS (YOUR REAL INBOX)</label>
+        <input id="managerEmailInput" type="email" placeholder="e.g. yourname@gmail.com" value="" required style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:var(--base);padding:11px 14px;color:var(--text);font-size:13.5px;outline:none;" />
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--ff-mono);font-size:11px;color:var(--text-mute);margin-bottom:6px;">PRIORITY LEVEL</label>
+        <select id="emailPrioritySelect" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:var(--base);padding:11px 14px;color:var(--text);font-size:13.5px;outline:none;">
+          <option value="URGENT — Immediate Action Required">🚨 URGENT — Immediate Action Required</option>
+          <option value="HIGH — Schedule Recovery">⚠️ HIGH — Schedule Recovery</option>
+          <option value="STANDARD — Field Notice">ℹ️ STANDARD — Field Notice</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--ff-mono);font-size:11px;color:var(--text-mute);margin-bottom:6px;">ADDITIONAL DIRECTIVE REMARKS (OPTIONAL)</label>
+        <textarea id="emailRemarksInput" placeholder="Add custom instructions for the manager (e.g., Please approve workforce shift by 09:00 tomorrow)..." style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:var(--base);padding:11px 14px;color:var(--text);font-size:13px;min-height:55px;resize:vertical;outline:none;"></textarea>
+      </div>
+      <div class="secure-email-note" role="note">
+        <div class="secure-email-note-title">🔐 Secure Email Delivery</div>
+        <p>Email credentials are stored on the SitePulse server and are <strong>never requested or sent by this browser</strong>. Configure SMTP only in the backend <code>.env</code> file.</p>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;">
+        <button type="button" class="btn-secondary" id="emailCancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary" id="emailSendSubmitBtn" style="background:var(--signal);color:#fff;">Send Email Notification 🚀</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/app.js?v=email-delivery-fix-2" defer></script>
+
+</body>
+</html>

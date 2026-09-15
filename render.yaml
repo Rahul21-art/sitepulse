@@ -1,0 +1,45 @@
+# Render Blueprint for SitePulse
+# Secrets are deliberately requested in the Render dashboard and never stored here.
+services:
+  - type: web
+    name: sitepulse
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: HOST
+        value: "0.0.0.0"
+      - key: PGSSL
+        value: "true"
+      - key: PGPOOL_MAX
+        value: "5"
+      - key: MAX_BODY_BYTES
+        value: "102400"
+      - key: RATE_LIMIT_MAX
+        value: "30"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sitepulse-db
+          property: connectionString
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+databases:
+  - name: sitepulse-db
+    plan: free
+    databaseName: sitepulse
+    user: sitepulse

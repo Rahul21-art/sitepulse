@@ -1,0 +1,20 @@
+{
+  "name": "sitepulse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SitePulse infrastructure intelligence platform for SIH26122.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check backend/db/database.js && node --check backend/email.js && node --check frontend/js/app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "nodemailer": "^7.0.6",
+    "pg": "^8.16.3"
+  }
+}
