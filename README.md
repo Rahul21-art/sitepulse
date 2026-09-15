@@ -82,6 +82,7 @@ action plan to the template's `{{{html}}}` content placeholder.
 EMAILJS_SERVICE_ID=service_xxxxxxx
 EMAILJS_TEMPLATE_ID=template_xxxxxxx
 EMAILJS_PUBLIC_KEY=your_emailjs_public_key
+EMAILJS_PRIVATE_KEY=your_emailjs_private_key
 EMAILJS_REPLY_TO=your-gmail-address@gmail.com
 ```
 

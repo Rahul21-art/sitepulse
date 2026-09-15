@@ -112,6 +112,7 @@ async function sendActionEmail({ managerName, managerEmail, priority, remarks, r
           service_id: process.env.EMAILJS_SERVICE_ID,
           template_id: process.env.EMAILJS_TEMPLATE_ID,
           user_id: process.env.EMAILJS_PUBLIC_KEY,
+          ...(process.env.EMAILJS_PRIVATE_KEY ? { accessToken: process.env.EMAILJS_PRIVATE_KEY } : {}),
           template_params: {
             manager_email: managerEmail,
             name: managerName,
