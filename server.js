@@ -16,6 +16,7 @@ const { URL } = require('url');
 
 const { getPool, isDatabaseConfigured, query } = require('./backend/db/database');
 const { sendActionEmail, isEmailConfigured } = require('./backend/email');
+const { createProject, getProject, listProjects } = require('./backend/projects');
 
 const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -174,6 +175,35 @@ async function handleApi(req, res, url) {
        FROM project_activities ORDER BY planned_start_date, activity_id`
     );
     return json(res, 200, result.rows);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/processing-capabilities') {
+    return json(res, 200, {
+      documentOcr: { state: 'unavailable', reason: 'PaddleOCR processing service is not configured.' },
+      constructionCv: { state: 'unavailable', reason: 'A validated construction YOLO model is not configured.' },
+      bim: { state: 'unavailable', reason: 'IFC processing service is not configured.' },
+      reconstruction: { state: 'unavailable', reason: 'COLMAP/OpenMVS processing service is not configured.' },
+      riskModel: { state: 'unavailable', reason: 'Historical project data and an XGBoost service are not configured.' },
+      browserAlignment: { state: 'available', limitation: 'Manual four-point visual alignment only; not semantic construction verification.' }
+    });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/projects') {
+    if (!isDatabaseConfigured()) return json(res, 503, { error: 'PostgreSQL is required for project records.' });
+    return json(res, 200, await listProjects());
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/projects') {
+    if (!isDatabaseConfigured()) return json(res, 503, { error: 'PostgreSQL is required for project records.' });
+    const project = await createProject(await readJson(req));
+    return json(res, 201, { success: true, project });
+  }
+
+  const projectMatch = url.pathname.match(/^\/api\/projects\/([0-9a-f-]{36})$/i);
+  if (req.method === 'GET' && projectMatch) {
+    if (!isDatabaseConfigured()) return json(res, 503, { error: 'PostgreSQL is required for project records.' });
+    const project = await getProject(projectMatch[1]);
+    return project ? json(res, 200, project) : json(res, 404, { error: 'Project not found.' });
   }
 
   if (req.method === 'POST' && url.pathname === '/api/send-email') {

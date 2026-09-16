@@ -45,6 +45,21 @@ Set `PGUSER`, `PGPASSWORD`, `PGDATABASE`, and related variables in `.env`, then 
 
 When PostgreSQL is configured, the app loads planned activities from `project_activities` and persists assessment reports/events.
 
+### Canonical project foundation
+
+New production-oriented tables are managed with additive migrations. Do not run
+`database/schema.sql` against a populated production database because that file
+contains legacy drop-and-create statements. Instead run:
+
+```bash
+npm run migrate
+```
+
+The first migration introduces projects, revisions, file metadata, processing
+jobs, canonical project state and an append-only audit-event foundation. It does
+not upload files or claim OCR/CV/BIM processing is available. Query
+`GET /api/processing-capabilities` to see the truthful service availability.
+
 ## Email
 
 For Gmail, use an App Password rather than your normal account password. Put SMTP settings only in `.env`:
