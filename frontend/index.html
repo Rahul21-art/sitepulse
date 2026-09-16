@@ -296,10 +296,41 @@
     </div>
   </div>
 
+  <div class="cv-comparison reveal" id="cvComparison">
+    <div class="cv-comparison-head">
+      <div>
+        <div class="eyebrow"><i></i> REAL IMAGE COMPARISON</div>
+        <h3>Align the same work area, then measure it.</h3>
+        <p>Use four matching points to correct perspective. Mark the planned work area on the blueprint; SitePulse then measures image structure within that area. This is an image-based CV heuristic, not a claim of semantic construction verification.</p>
+      </div>
+      <span id="cvStatus" class="cv-status pending">REAL CV RESULT UNAVAILABLE</span>
+    </div>
+    <div class="cv-steps" aria-label="Comparison workflow">
+      <span>1. Upload images</span><span>2. Click 4 blueprint points</span><span>3. Click their 4 site-photo matches</span><span>4. Trace planned zone</span><span>5. Run comparison</span>
+    </div>
+    <div class="cv-canvas-grid">
+      <div><h4>Blueprint — matching points and planned zone</h4><canvas id="blueprintCanvas" width="640" height="420" aria-label="Blueprint control point and zone canvas"></canvas></div>
+      <div><h4>Current site image — matching points</h4><canvas id="siteCanvas" width="640" height="420" aria-label="Current site control point canvas"></canvas></div>
+    </div>
+    <div class="cv-actions">
+      <button id="cvResetPoints" class="cv-button" type="button">Reset control points</button>
+      <button id="cvResetZone" class="cv-button" type="button">Reset planned zone</button>
+      <button id="cvCloseZone" class="cv-button" type="button">Close planned zone</button>
+      <label class="cv-sensitivity">Detection sensitivity <input id="cvSensitivity" type="range" min="20" max="80" value="52" /> <output id="cvSensitivityValue">52</output></label>
+      <button id="runComparisonBtn" class="btn-primary" type="button">Run real image comparison</button>
+    </div>
+    <p id="cvGuidance" class="cv-guidance">Upload both images to begin. Use clearly matching corners, grid intersections, or fixed landmarks. Results remain unavailable until alignment and a planned zone are supplied.</p>
+    <div id="cvResults" class="cv-results" hidden>
+      <div><h4>Perspective-aligned site image</h4><canvas id="alignedCanvas" width="640" height="420"></canvas></div>
+      <div><h4>Difference map — green detected / blue not detected</h4><canvas id="differenceCanvas" width="640" height="420"></canvas></div>
+      <div class="cv-metrics" id="cvMetrics"></div>
+    </div>
+  </div>
+
   <div class="panel-head reveal" style="margin-top:44px;margin-bottom:18px;">
     <div class="eyebrow"><i></i> SCHEDULE BASELINE</div>
     <h3 style="font:600 21px var(--display);margin:0 0 8px;">Dates come from the plan, not the photo.</h3>
-    <p class="panel-desc">Set the activity baseline and enter the latest verified completion percentage. The uploaded images support this update; the date calculation uses the project schedule.</p>
+    <p class="panel-desc">Set the activity baseline. A completed image comparison fills the actual progress from the measured planned zone; otherwise enter a verified field value. The date calculation uses the project schedule.</p>
   </div>
   <div class="assessment-form reveal" id="scheduleBaseline">
     <select id="plannedActivity" aria-label="Planned activity"><option value="">Select planned activity</option></select>

@@ -689,6 +689,162 @@ const photoInputs = [
   {input:'blueprintInput', preview:'blueprintPreview', file:'blueprintFile'},
   {input:'sitePhotoInput', preview:'sitePhotoPreview', file:'sitePhotoFile'}
 ];
+const comparisonState = { blueprintImage:null, siteImage:null, blueprintPoints:[], sitePoints:[], zone:[], zoneClosed:false, result:null };
+const comparisonCanvases = {};
+
+function comparisonEl(id){ return document.getElementById(id); }
+function setComparisonGuidance(message){ comparisonEl('cvGuidance').textContent = message; }
+function setComparisonStatus(ready, message){
+  const status = comparisonEl('cvStatus');
+  status.className = `cv-status ${ready ? 'ready' : 'pending'}`;
+  status.textContent = message;
+}
+function prepareComparisonCanvases(){
+  ['blueprintCanvas','siteCanvas','alignedCanvas','differenceCanvas'].forEach(id => {
+    const canvas = comparisonEl(id);
+    comparisonCanvases[id] = { canvas, ctx: canvas.getContext('2d', { willReadFrequently:true }) };
+  });
+}
+function drawContain(ctx, image, canvas){
+  ctx.fillStyle = '#080b10'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(!image) return;
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+}
+function drawPoint(ctx, point, index, color){
+  ctx.beginPath(); ctx.arc(point.x, point.y, 7, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+  ctx.fillStyle = '#071017'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(index + 1, point.x, point.y + .5);
+}
+function redrawBlueprint(){
+  const {canvas,ctx} = comparisonCanvases.blueprintCanvas;
+  drawContain(ctx, comparisonState.blueprintImage, canvas);
+  if(comparisonState.zone.length){
+    ctx.beginPath(); comparisonState.zone.forEach((p,index) => index ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+    if(comparisonState.zoneClosed){ ctx.closePath(); ctx.fillStyle='rgba(79,142,247,.22)'; ctx.fill(); }
+    ctx.strokeStyle='#4f8ef7'; ctx.lineWidth=2; ctx.stroke();
+    comparisonState.zone.forEach((p,index)=>drawPoint(ctx,p,index,'#4f8ef7'));
+  }
+  comparisonState.blueprintPoints.forEach((p,index)=>drawPoint(ctx,p,index,'#5eead4'));
+}
+function redrawSite(){
+  const {canvas,ctx} = comparisonCanvases.siteCanvas;
+  drawContain(ctx, comparisonState.siteImage, canvas);
+  comparisonState.sitePoints.forEach((p,index)=>drawPoint(ctx,p,index,'#5eead4'));
+}
+function resetComparison(keepImages=true){
+  comparisonState.blueprintPoints=[]; comparisonState.sitePoints=[]; comparisonState.zone=[]; comparisonState.zoneClosed=false; comparisonState.result=null;
+  comparisonEl('cvResults').hidden=true;
+  redrawBlueprint(); redrawSite();
+  setComparisonStatus(false, 'REAL CV RESULT UNAVAILABLE');
+  if(keepImages && comparisonState.blueprintImage && comparisonState.siteImage) setComparisonGuidance('Click four matching points on the blueprint first, then click those same four landmarks on the site photo.');
+}
+function imageToComparison(file, target){
+  if(!file) return;
+  const image = new Image();
+  image.onload = () => { comparisonState[target] = image; resetComparison(); };
+  image.src = URL.createObjectURL(file);
+}
+function canvasPoint(event, canvas){
+  const rect=canvas.getBoundingClientRect();
+  return { x:(event.clientX-rect.left)*canvas.width/rect.width, y:(event.clientY-rect.top)*canvas.height/rect.height };
+}
+function onBlueprintCanvasClick(event){
+  if(!comparisonState.blueprintImage || !comparisonState.siteImage) return setComparisonGuidance('Upload both images before selecting control points.');
+  const point=canvasPoint(event,comparisonCanvases.blueprintCanvas.canvas);
+  if(comparisonState.blueprintPoints.length < 4){
+    comparisonState.blueprintPoints.push(point); redrawBlueprint();
+    setComparisonGuidance(comparisonState.blueprintPoints.length < 4 ? `Blueprint point ${comparisonState.blueprintPoints.length}/4 captured.` : 'Now click the same four landmarks on the site photo, in the same order.');
+  } else if(!comparisonState.zoneClosed){
+    comparisonState.zone.push(point); redrawBlueprint();
+    setComparisonGuidance(`Planned-zone vertex ${comparisonState.zone.length} captured. Add at least three, then choose “Close planned zone”.`);
+  }
+}
+function onSiteCanvasClick(event){
+  if(comparisonState.blueprintPoints.length < 4) return setComparisonGuidance('Select all four blueprint control points before selecting the corresponding site-photo points.');
+  if(comparisonState.sitePoints.length >= 4) return setComparisonGuidance('All four site control points are already captured. Trace the planned zone on the blueprint.');
+  comparisonState.sitePoints.push(canvasPoint(event,comparisonCanvases.siteCanvas.canvas)); redrawSite();
+  setComparisonGuidance(comparisonState.sitePoints.length < 4 ? `Site-photo match ${comparisonState.sitePoints.length}/4 captured.` : 'Alignment points are ready. Click the blueprint to trace the planned work zone, then close the zone.');
+}
+function solveLinearSystem(matrix){
+  const n=matrix.length;
+  for(let col=0; col<n; col++){
+    let pivot=col; for(let row=col+1;row<n;row++) if(Math.abs(matrix[row][col])>Math.abs(matrix[pivot][col])) pivot=row;
+    if(Math.abs(matrix[pivot][col]) < 1e-9) return null;
+    [matrix[col],matrix[pivot]]=[matrix[pivot],matrix[col]];
+    const divisor=matrix[col][col]; for(let j=col;j<=n;j++) matrix[col][j]/=divisor;
+    for(let row=0;row<n;row++) if(row!==col){ const factor=matrix[row][col]; for(let j=col;j<=n;j++) matrix[row][j]-=factor*matrix[col][j]; }
+  }
+  return matrix.map(row=>row[n]);
+}
+// Calculates the homography from blueprint coordinates to site-photo coordinates.
+function homography(from, to){
+  const matrix=[];
+  for(let i=0;i<4;i++){
+    const {x,y}=from[i]; const u=to[i].x, v=to[i].y;
+    matrix.push([x,y,1,0,0,0,-u*x,-u*y,u]);
+    matrix.push([0,0,0,x,y,1,-v*x,-v*y,v]);
+  }
+  const h=solveLinearSystem(matrix); return h && [...h,1];
+}
+function inPolygon(x,y,points){
+  let inside=false;
+  for(let i=0,j=points.length-1;i<points.length;j=i++){
+    const xi=points[i].x, yi=points[i].y, xj=points[j].x, yj=points[j].y;
+    if(((yi>y)!==(yj>y)) && x < (xj-xi)*(y-yi)/(yj-yi)+xi) inside=!inside;
+  }
+  return inside;
+}
+function percentile(values, ratio){ const sorted=values.slice().sort((a,b)=>a-b); return sorted[Math.min(sorted.length-1,Math.max(0,Math.floor(sorted.length*ratio)))]; }
+function runImageComparison(){
+  const {blueprintPoints,sitePoints,zone}=comparisonState;
+  if(!comparisonState.blueprintImage || !comparisonState.siteImage || blueprintPoints.length!==4 || sitePoints.length!==4 || !comparisonState.zoneClosed || zone.length<3){
+    setComparisonGuidance('REAL CV RESULT unavailable: upload both images, capture four matching point pairs, and close a planned zone with at least three vertices.'); return;
+  }
+  const h=homography(blueprintPoints,sitePoints);
+  if(!h){ setComparisonGuidance('REAL CV RESULT unavailable: the selected control points do not form a usable perspective transform. Reset them and choose four well-separated landmarks.'); return; }
+  const aligned=comparisonCanvases.alignedCanvas, site=comparisonCanvases.siteCanvas;
+  const source=site.ctx.getImageData(0,0,site.canvas.width,site.canvas.height).data;
+  const out=aligned.ctx.createImageData(aligned.canvas.width,aligned.canvas.height), w=aligned.canvas.width, hgt=aligned.canvas.height;
+  for(let y=0;y<hgt;y++) for(let x=0;x<w;x++){
+    const d=h[6]*x+h[7]*y+1, u=(h[0]*x+h[1]*y+h[2])/d, v=(h[3]*x+h[4]*y+h[5])/d, di=(y*w+x)*4;
+    if(u>=0&&v>=0&&u<w&&v<hgt){ const si=(Math.floor(v)*w+Math.floor(u))*4; out.data[di]=source[si];out.data[di+1]=source[si+1];out.data[di+2]=source[si+2];out.data[di+3]=255; }
+  }
+  aligned.ctx.putImageData(out,0,0);
+  const brightness=[];
+  for(let y=1;y<hgt-1;y+=2) for(let x=1;x<w-1;x+=2) if(inPolygon(x,y,zone)){
+    const p=(y*w+x)*4, l=.2126*out.data[p]+.7152*out.data[p+1]+.0722*out.data[p+2];
+    const right=.2126*out.data[p+4]+.7152*out.data[p+5]+.0722*out.data[p+6]; const down=.2126*out.data[p+w*4]+.7152*out.data[p+w*4+1]+.0722*out.data[p+w*4+2];
+    brightness.push(Math.abs(l-right)+Math.abs(l-down));
+  }
+  if(brightness.length<20){ setComparisonGuidance('REAL CV RESULT unavailable: the planned zone is too small to measure. Trace a larger, relevant work area.'); return; }
+  const sensitivity=Number(comparisonEl('cvSensitivity').value), threshold=percentile(brightness,1-sensitivity/100);
+  const diff=comparisonCanvases.differenceCanvas, diffData=diff.ctx.createImageData(w,hgt); let plannedPixels=0, detectedPixels=0;
+  for(let y=1;y<hgt-1;y++) for(let x=1;x<w-1;x++){
+    const di=(y*w+x)*4;
+    if(!inPolygon(x,y,zone)) { diffData.data[di+3]=255; continue; }
+    plannedPixels++; const l=.2126*out.data[di]+.7152*out.data[di+1]+.0722*out.data[di+2];
+    const right=.2126*out.data[di+4]+.7152*out.data[di+5]+.0722*out.data[di+6]; const down=.2126*out.data[di+w*4]+.7152*out.data[di+w*4+1]+.0722*out.data[di+w*4+2];
+    const detected=Math.abs(l-right)+Math.abs(l-down)>=threshold;
+    if(detected){detectedPixels++; diffData.data[di]=62;diffData.data[di+1]=210;diffData.data[di+2]=151;} else {diffData.data[di]=48;diffData.data[di+1]=102;diffData.data[di+2]=190;}
+    diffData.data[di+3]=255;
+  }
+  diff.ctx.putImageData(diffData,0,0);
+  const actual=Math.round(detectedPixels/plannedPixels*100), confidence=Math.round(Math.min(95,Math.max(20,100-Math.abs(50-sensitivity)*.6-(threshold<3?25:0))));
+  comparisonState.result={actual,confidence,threshold:Math.round(threshold),plannedPixels,detectedPixels};
+  comparisonEl('actualProgress').value=actual;
+  comparisonEl('cvMetrics').innerHTML=`<div>Measured progress<b>${actual}%</b></div><div>Detected image area<b>${Math.round(detectedPixels/plannedPixels*100)}%</b></div><div>Analysis confidence<b>${confidence}%</b></div><div>Edge threshold<b>${Math.round(threshold)}</b></div>`;
+  comparisonEl('cvResults').hidden=false; setComparisonStatus(true,'REAL CV RESULT READY');
+  setComparisonGuidance(`Measured from ${plannedPixels.toLocaleString()} pixels in the manually marked zone. The result has populated Actual progress; review it with the site engineer before reporting.`);
+}
+function initialiseImageComparison(){
+  prepareComparisonCanvases(); redrawBlueprint(); redrawSite();
+  comparisonCanvases.blueprintCanvas.canvas.addEventListener('click',onBlueprintCanvasClick);
+  comparisonCanvases.siteCanvas.canvas.addEventListener('click',onSiteCanvasClick);
+  comparisonEl('cvResetPoints').addEventListener('click',()=>{ comparisonState.blueprintPoints=[];comparisonState.sitePoints=[];comparisonState.result=null;redrawBlueprint();redrawSite();setComparisonStatus(false,'REAL CV RESULT UNAVAILABLE');setComparisonGuidance('Control points reset. Click four matching blueprint landmarks.'); });
+  comparisonEl('cvResetZone').addEventListener('click',()=>{ comparisonState.zone=[];comparisonState.zoneClosed=false;comparisonState.result=null;redrawBlueprint();comparisonEl('cvResults').hidden=true;setComparisonStatus(false,'REAL CV RESULT UNAVAILABLE');setComparisonGuidance('Planned zone reset. Click the blueprint to trace a new zone.'); });
+  comparisonEl('cvCloseZone').addEventListener('click',()=>{ if(comparisonState.zone.length<3) return setComparisonGuidance('Add at least three planned-zone vertices before closing the zone.'); comparisonState.zoneClosed=true;redrawBlueprint();setComparisonGuidance('Planned zone is ready. Run the real image comparison.'); });
+  comparisonEl('cvSensitivity').addEventListener('input',event=>comparisonEl('cvSensitivityValue').value=event.target.value);
+  comparisonEl('runComparisonBtn').addEventListener('click',runImageComparison);
+}
 photoInputs.forEach(({input,preview,file})=>{
   document.getElementById(input).addEventListener('change', event=>{
     const selected = event.target.files[0];
@@ -697,6 +853,7 @@ photoInputs.forEach(({input,preview,file})=>{
     previewEl.src = URL.createObjectURL(selected);
     previewEl.style.display = 'block';
     document.getElementById(file).textContent = `${selected.name} · ${(selected.size / 1024 / 1024).toFixed(1)} MB`;
+    imageToComparison(selected, input === 'blueprintInput' ? 'blueprintImage' : 'siteImage');
   });
 });
 function escapeHtml(value){
@@ -797,32 +954,32 @@ async function buildSiteReport(){
   const zone = document.getElementById('assessmentZone').value.trim() || 'Unspecified work area';
   const date = document.getElementById('assessmentDate').value || new Date().toLocaleDateString('en-CA');
   const observation = document.getElementById('siteObservation').value.trim();
-  const aiPhotoAnalysis = generateAIPhotoComparisonData(
-    blueprint, sitePhoto, activity, actualProgress, expectedProgress, variance, zone, engineer, updateDate, observation
+  const photoAnalysis = generatePhotoComparisonData(
+    blueprint, sitePhoto, activity, actualProgress, expectedProgress, variance, zone
   );
 
   const report = document.getElementById('siteReport');
   report.innerHTML = `
     <div class="site-report-card">
-      <div class="eyebrow" style="color:var(--ai);"><i></i> AI VISION &amp; PHOTO ASSESSMENT REPORT</div>
-      <h3 style="font:600 20px var(--ff-display);margin:6px 0 14px;color:var(--text);">${escapeHtml(zone)} — Automated Photo vs. Blueprint Analysis</h3>
+      <div class="eyebrow" style="color:var(--ai);"><i></i> PHOTO &amp; SCHEDULE ASSESSMENT REPORT</div>
+      <h3 style="font:600 20px var(--ff-display);margin:6px 0 14px;color:var(--text);">${escapeHtml(zone)} — Blueprint vs. Current Site Review</h3>
       
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;background:rgba(17,19,24,0.6);padding:14px;border-radius:8px;border:1px solid var(--line);">
         <div>
-          <div style="font-family:var(--ff-mono);font-size:11px;color:var(--signal);margin-bottom:6px;">📐 BLUEPRINT PLAN SPECIFICATION</div>
-          <div style="font-size:13px;color:var(--text);line-height:1.5;">${aiPhotoAnalysis.planFeatures}</div>
+          <div style="font-family:var(--ff-mono);font-size:11px;color:var(--signal);margin-bottom:6px;">📐 BLUEPRINT EVIDENCE</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">${photoAnalysis.planFeatures}</div>
           <div style="font-size:11px;color:var(--text-faint);margin-top:6px;">Blueprint File: <b>${escapeHtml(blueprint.name)}</b></div>
         </div>
         <div>
-          <div style="font-family:var(--ff-mono);font-size:11px;color:var(--ai);margin-bottom:6px;">📸 CURRENT SITE PHOTO EVIDENCE</div>
-          <div style="font-size:13px;color:var(--text);line-height:1.5;">${aiPhotoAnalysis.siteFeatures}</div>
+          <div style="font-family:var(--ff-mono);font-size:11px;color:var(--ai);margin-bottom:6px;">📸 CURRENT SITE IMAGE EVIDENCE</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">${photoAnalysis.siteFeatures}</div>
           <div style="font-size:11px;color:var(--text-faint);margin-top:6px;">Site Photo File: <b>${escapeHtml(sitePhoto.name)}</b></div>
         </div>
       </div>
 
       <div style="margin-top:14px;padding:14px;border-radius:6px;background:${variance < 0 ? 'var(--crit-soft)' : 'var(--ai-soft)'};border:1px solid ${variance < 0 ? 'var(--crit)' : 'var(--ai)'};">
-        <div style="font-family:var(--ff-mono);font-size:11px;color:${variance < 0 ? 'var(--crit)' : 'var(--ai)'};font-weight:600;margin-bottom:6px;">🔍 AUTOMATED VISUAL DISCREPANCY &amp; PROGRESS VERIFICATION</div>
-        <div style="font-size:13.5px;color:var(--text);line-height:1.6;">${aiPhotoAnalysis.discrepancyText}</div>
+        <div style="font-family:var(--ff-mono);font-size:11px;color:${variance < 0 ? 'var(--crit)' : 'var(--ai)'};font-weight:600;margin-bottom:6px;">🔍 IMAGE COMPARISON &amp; PROGRESS BASIS</div>
+        <div style="font-size:13.5px;color:var(--text);line-height:1.6;">${photoAnalysis.discrepancyText}</div>
       </div>
 
       <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;color:var(--text-mute);background:var(--surface);padding:12px;border-radius:6px;border:1px solid var(--line-soft);">
@@ -837,7 +994,7 @@ async function buildSiteReport(){
       ${observation ? `<div style="margin-top:12px;font-size:13px;color:var(--text);background:var(--surface-2);padding:10px 14px;border-radius:6px;border-left:3px solid var(--signal);"><b>Site Engineer Note:</b> ${escapeHtml(observation)}</div>` : ''}
 
       <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--text);">
-        <b>🚀 Recommended AI Action:</b> ${aiPhotoAnalysis.nextStepText}
+        <b>Recommended next step:</b> ${photoAnalysis.nextStepText}
       </div>
     </div>`;
   report.classList.add('show');
@@ -891,44 +1048,16 @@ async function buildSiteReport(){
   return true;
 }
 
-function generateAIPhotoComparisonData(blueprint, sitePhoto, activity, actualProgress, expectedProgress, variance, zone, engineer, updateDate, userObservation){
-  const isDelay = variance < 0;
-  const devDays = Math.max(0, Math.round(Math.abs(variance) * 0.35));
-  const actLower = activity.toLowerCase();
-  
-  let planFeatures = "Blueprint drawing specifies structural grid layout, reinforced concrete column nodes, elevation datum lines, and target milestone dates.";
-  let siteFeatures = "Site photograph confirms active structural construction, scaffolding, crane positioning, and field progress on site.";
-
-  if (actLower.includes('column') || actLower.includes('slab') || actLower.includes('concrete') || actLower.includes('footing') || actLower.includes('pcc')) {
-    planFeatures = "Blueprint drawing specifies 5-storey RC frame design, column grid spacing 6500mm x 3400mm, rebar cage reinforcement schedules, and floor slab elevation targets.";
-    siteFeatures = "Site photo confirms RC column casting through Level 4, timber shuttering formwork intact, vertical starter rebar exposed for Level 5, and active tower crane operations.";
-  } else if (actLower.includes('excavation') || actLower.includes('clearance') || actLower.includes('earth')) {
-    planFeatures = "Blueprint drawing specifies foundation pit excavation depth -2.40m, PCC base stabilization layer, perimeter trench routes, and soil compaction specs.";
-    siteFeatures = "Site photo shows completed excavation pit, leveled PCC base layer poured, rebar footing cages tied, and hydraulic excavator positioned on access ramp.";
-  } else if (actLower.includes('brick') || actLower.includes('plaster') || actLower.includes('wall')) {
-    planFeatures = "Blueprint drawing specifies 230mm exterior red brick masonry envelope, lintel band heights, mortar mix ratio 1:4, and window opening schedules.";
-    siteFeatures = "Site photo shows completed exterior brick masonry up to Level 3, scaffolding system erected on facade, and window opening lintels cast.";
-  } else if (actLower.includes('road') || actLower.includes('pavement') || actLower.includes('drain')) {
-    planFeatures = "Blueprint drawing specifies 300mm aggregate sub-base, stormwater drainage conduit gradient 1:120, and asphalt surfacing layers.";
-    siteFeatures = "Site photo shows graded sub-base corridor, precast concrete drainage culverts laid along segment, and compaction roller active.";
-  }
-
-  let discrepancyText = "";
-  if (variance >= 0) {
-    discrepancyText = `✅ <b>Visual Match Confirmed (96.8% Alignment):</b> Automated image feature comparison between blueprint (<code>${escapeHtml(blueprint.name)}</code>) and site photo (<code>${escapeHtml(sitePhoto.name)}</code>) confirms physical progress strictly matches or exceeds planned elevation targets (${actualProgress}% actual vs ${expectedProgress}% planned). Structural member dimensions and column node alignment meet CAD blueprint specifications.`;
-  } else if (variance >= -10) {
-    discrepancyText = `⚠️ <b>Minor Visual Delay Detected (${Math.abs(variance)}% Variance):</b> Photo evidence (<code>${escapeHtml(sitePhoto.name)}</code>) shows structural progress is tracking slightly behind the blueprint schedule (${actualProgress}% actual vs ${expectedProgress}% expected). Main column shuttering is in progress, but concrete pour preparation is delayed by ~${devDays} days relative to the baseline drawing.`;
-  } else {
-    discrepancyText = `🚨 <b>Significant Visual Discrepancy Flagged (${Math.abs(variance)}% Delay):</b> Comparing site photograph (<code>${escapeHtml(sitePhoto.name)}</code>) with blueprint specifications (<code>${escapeHtml(blueprint.name)}</code>), Level 4 slab pouring is complete, but vertical column rebar shuttering for Level 5 has not commenced. Blueprint milestone targeted completion by ${escapeHtml(updateDate)}, confirming a critical ${devDays}-day schedule slip.`;
-  }
-
-  let nextStepText = "";
-  if (variance >= 0) {
-    nextStepText = `Progress is on track. Retain photo evidence in SIH26122 audit log and proceed with scheduled ${escapeHtml(activity)} handoff.`;
-  } else {
-    nextStepText = `Deploy 6 additional formwork carpenters and allocate a dedicated concrete pump truck to Zone ${escapeHtml(zone)} to accelerate ${escapeHtml(activity)} and recover ~${devDays} days of delay.`;
-  }
-
+function generatePhotoComparisonData(blueprint, sitePhoto, activity, actualProgress, expectedProgress, variance, zone){
+  const cv = comparisonState.result;
+  const planFeatures = `Uploaded blueprint <code>${escapeHtml(blueprint.name)}</code> is the plan reference for ${escapeHtml(zone)}. The marked planned zone and four manual control-point pairs are retained in this browser session for the comparison.`;
+  const siteFeatures = `Uploaded site image <code>${escapeHtml(sitePhoto.name)}</code> is the current-condition reference. No construction objects, dimensions, or milestones are inferred beyond the image measurement.`;
+  const discrepancyText = cv
+    ? `<b>REAL CV RESULT:</b> perspective alignment used four user-selected matching points. An edge-structure segmentation measured <b>${cv.actual}%</b> detected image area inside the marked planned zone (${cv.detectedPixels.toLocaleString()} of ${cv.plannedPixels.toLocaleString()} pixels; heuristic confidence ${cv.confidence}%). This supplies the actual-progress input and is not a semantic proof of construction completion.`
+    : `<b>MANUAL / FALLBACK RESULT:</b> no completed image comparison is available, so the <b>${actualProgress}%</b> actual progress came from the verified field entry. SitePulse does not claim visual alignment or object detection in this report.`;
+  const nextStepText = cv
+    ? `Have the site engineer review the aligned image and difference map before accepting ${cv.actual}% for ${escapeHtml(activity)}; compare it with the ${expectedProgress}% schedule baseline.`
+    : `Complete the real image comparison or have a site engineer verify the manual progress value before acting on the ${variance >= 0 ? 'on-track' : 'at-risk'} schedule result.`;
   return { planFeatures, siteFeatures, discrepancyText, nextStepText };
 }
 
@@ -1147,6 +1276,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   buildDemoProgress();
   setActiveZone('B');
   buildActivitySelector();
+  initialiseImageComparison();
   attachRecommendationEmailHandlers();
   document.getElementById('assessmentDate').value = new Date().toLocaleDateString('en-CA');
   document.getElementById('progressUpdateDate').value = new Date().toLocaleDateString('en-CA');

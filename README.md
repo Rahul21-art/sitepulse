@@ -90,6 +90,19 @@ EmailJS is preferred whenever all three EmailJS identifiers are configured.
 
 The browser sends only the recipient and message data. SMTP credentials never leave the backend.
 
+## Blueprint vs. site image comparison
+
+The Photo-Based Site Assessment section includes a browser-local, real image comparison workflow with no external CV dependency:
+
+1. Upload a blueprint and a current site image.
+2. Click four matching landmarks in both images to calculate a perspective homography.
+3. Trace the planned work zone on the blueprint.
+4. Run the comparison to warp the site image into blueprint space and calculate edge-structure coverage inside that zone.
+
+The computed coverage percentage fills the assessment's actual-progress field and is included with the schedule variance in the report. The UI explicitly labels this as a **REAL CV RESULT** only after those steps succeed; otherwise it remains unavailable and the report identifies the progress as manual/fallback.
+
+This MVP uses image structure/edge coverage, not an object-recognition construction model. A site engineer must review the aligned image and difference map before accepting the value as verified progress.
+
 ## Production deployment
 
 GitHub Pages can host only the static frontend; it cannot execute this Node backend. For the full application, deploy the Node server and PostgreSQL database on a backend-capable host and point the frontend/API to that deployment.
