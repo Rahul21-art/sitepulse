@@ -378,6 +378,11 @@ const server = http.createServer(async (req, res) => {
     });
   } catch (error) {
     console.error('[API]', error);
+    if (error?.code === '42P01') {
+      return json(res, 503, {
+        error: 'Database migration is required before this project feature can be used. Run npm run migrate on the API host.'
+      });
+    }
     json(res, error.statusCode || 500, {
       error: error.statusCode ? error.message : 'Internal server error.'
     });
