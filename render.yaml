@@ -5,7 +5,7 @@ services:
     name: sitepulse
     runtime: node
     plan: free
-    buildCommand: npm ci
+    buildCommand: npm ci && npm run migrate
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

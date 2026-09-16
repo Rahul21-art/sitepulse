@@ -6,7 +6,7 @@ GitHub Pages publishes `frontend/`. Configure `API_BASE_URL` in the frontend for
 
 ## Node API
 
-Deploy Node 20+ with a managed PostgreSQL database. Set `DATABASE_URL`, email-provider variables, `CORS_ORIGIN`, and `HOST=0.0.0.0`. Apply safe migrations with `npm run migrate` before enabling project routes.
+Deploy Node 20+ with a managed PostgreSQL database. Set `DATABASE_URL`, email-provider variables, `CORS_ORIGIN`, and `HOST=0.0.0.0`. The Render Blueprint runs `npm run migrate` as part of its build, so the additive migrations are applied before the API starts. For any other host, run it explicitly before enabling project routes.
 
 ## Processing service
 
