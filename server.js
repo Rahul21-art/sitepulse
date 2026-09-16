@@ -17,6 +17,7 @@ const { URL } = require('url');
 const { getPool, isDatabaseConfigured, query } = require('./backend/db/database');
 const { sendActionEmail, isEmailConfigured } = require('./backend/email');
 const { createProject, getProject, listProjects } = require('./backend/projects');
+const { importSchedule, getProgress, addProgressRecord } = require('./backend/schedule');
 
 const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -204,6 +205,26 @@ async function handleApi(req, res, url) {
     if (!isDatabaseConfigured()) return json(res, 503, { error: 'PostgreSQL is required for project records.' });
     const project = await getProject(projectMatch[1]);
     return project ? json(res, 200, project) : json(res, 404, { error: 'Project not found.' });
+  }
+
+  const projectRoute = url.pathname.match(/^\/api\/projects\/([0-9a-f-]{36})\/(schedule|progress|progress-records)$/i);
+  if (projectRoute) {
+    if (!isDatabaseConfigured()) return json(res, 503, { error: 'PostgreSQL is required for project records.' });
+    const [, projectId, resource] = projectRoute;
+    if (req.method === 'POST' && resource === 'schedule') {
+      const data = await readJson(req);
+      return json(res, 201, { success: true, ...(await importSchedule(projectId, data.activities)) });
+    }
+    if (req.method === 'GET' && resource === 'progress') {
+      const asOf = /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get('asOf') || '') ? url.searchParams.get('asOf') : new Date().toISOString().slice(0, 10);
+      return json(res, 200, await getProgress(projectId, asOf));
+    }
+    if (req.method === 'POST' && resource === 'progress-records') {
+      const data = await readJson(req);
+      const activityId = cleanString(data.activityId, 36);
+      if (!/^[0-9a-f-]{36}$/i.test(activityId)) return json(res, 400, { error: 'activityId must be a UUID.' });
+      return json(res, 201, { success: true, record: await addProgressRecord(projectId, activityId, data) });
+    }
   }
 
   if (req.method === 'POST' && url.pathname === '/api/send-email') {

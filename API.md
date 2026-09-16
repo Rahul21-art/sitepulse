@@ -11,6 +11,9 @@ All API responses are JSON. The Node API requires PostgreSQL for canonical proje
 | GET | `/api/projects` | List canonical projects |
 | POST | `/api/projects` | Create a project and initial audit/state records |
 | GET | `/api/projects/:id` | Project, file metadata, jobs and canonical state |
+| POST | `/api/projects/:id/schedule` | Create/update validated schedule activities |
+| GET | `/api/projects/:id/progress?asOf=YYYY-MM-DD` | Deterministic planned-vs-actual view |
+| POST | `/api/projects/:id/progress-records` | Add review-required evidence/progress record |
 | GET | `/api/activities` | Legacy schedule-baseline activities |
 | POST | `/api/assessments` | Legacy assessment persistence |
 | POST | `/api/send-email` | Send an action plan through configured server-side provider |
@@ -36,3 +39,9 @@ All API responses are JSON. The Node API requires PostgreSQL for canonical proje
 ```
 
 The route creates a revision, empty canonical state, and audit event atomically. Upload/schedule/DPR/capture APIs remain queued for the next implementation phase rather than silently accepting files without safe storage.
+
+## Deterministic progress
+
+`POST /api/projects/:id/schedule` accepts `activities`, each with `activityCode`, `activityName`, `plannedStart`, `plannedFinish`, and `weight` (0–1). The progress read endpoint calculates planned progress by date interpolation, then aggregates using the supplied weights. A missing activity record is deliberately not treated as proof of completion.
+
+`POST /api/projects/:id/progress-records` accepts an `activityId`, `recordedOn`, `actualProgress`, `sourceType`, and optional completed quantity/evidence note. All new records are `review_required`; an engineer-review endpoint will be added with the capture workflow.
