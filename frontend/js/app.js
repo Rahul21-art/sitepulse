@@ -753,9 +753,18 @@ function buildActivitySelector(){
   });
   fetch(apiUrl('/api/activities'))
     .then(response => response.ok ? response.json() : Promise.reject(new Error('Activity API unavailable')))
-    .then(activities => renderActivityOptions(activities.map(row => [
-      row.activity_id, row.activity_name, String(row.planned_start_date).slice(0, 10), String(row.planned_end_date).slice(0, 10)
-    ])))
+    .then(activities => {
+      // A configured but unseeded production database returns an empty array.
+      // Keep the included SIH26122 baseline usable in that case instead of
+      // replacing the dropdown with no selectable activities.
+      if (!Array.isArray(activities) || activities.length === 0) {
+        showActionNotice('Using the included schedule baseline until database activities are added.');
+        return;
+      }
+      renderActivityOptions(activities.map(row => [
+        row.activity_id, row.activity_name, String(row.planned_start_date).slice(0, 10), String(row.planned_end_date).slice(0, 10)
+      ]));
+    })
     .catch(() => showActionNotice('Using the local schedule baseline. PostgreSQL is optional for the frontend preview.'));
 }
 async function buildSiteReport(){
