@@ -1282,12 +1282,35 @@ document.getElementById('generateReportBtn').addEventListener('click', ()=>{
   showActionNotice('Add the blueprint and current site photo to build the project assessment.');
 });
 
-document.querySelectorAll('.new-proj-link').forEach(link=>{
-  link.addEventListener('click', (e)=>{
-    e.preventDefault();
-    document.getElementById('photo-assessment').scrollIntoView({behavior:'smooth', block:'start'});
-    showActionNotice('Initialize New Project: Upload your blueprint and site photograph below to set up the baseline.');
-  });
+const projectModal = document.getElementById('project-modal');
+function openProjectModal(){ projectModal.style.display='flex'; document.getElementById('projectName').focus(); }
+function closeProjectModal(){ projectModal.style.display='none'; }
+document.querySelectorAll('.new-proj-link').forEach(link=>link.addEventListener('click', event=>{ event.preventDefault(); openProjectModal(); }));
+document.getElementById('projectModalClose').addEventListener('click', closeProjectModal);
+document.getElementById('projectCancel').addEventListener('click', closeProjectModal);
+projectModal.addEventListener('click', event=>{ if(event.target === projectModal) closeProjectModal(); });
+document.getElementById('projectForm').addEventListener('submit', async event=>{
+  event.preventDefault();
+  const status = document.getElementById('projectFormStatus'); const submit = document.getElementById('projectSubmit');
+  const payload = {
+    name: document.getElementById('projectName').value.trim(), projectCode: document.getElementById('projectCode').value.trim(),
+    clientName: document.getElementById('projectClient').value.trim(), contractorName: document.getElementById('projectContractor').value.trim(),
+    projectManager: document.getElementById('projectManager').value.trim(), siteEngineer: document.getElementById('projectEngineer').value.trim(),
+    locationText: document.getElementById('projectLocation').value.trim(), projectType: document.getElementById('projectType').value.trim(),
+    startDate: document.getElementById('projectStart').value, plannedCompletionDate: document.getElementById('projectCompletion').value,
+    totalDurationDays: document.getElementById('projectDuration').value, unitSystem: document.getElementById('projectUnits').value,
+    description: document.getElementById('projectDescription').value.trim()
+  };
+  submit.disabled=true; status.textContent='Creating canonical project and audit record…';
+  try {
+    const response=await fetch(apiUrl('/api/projects'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await response.json().catch(()=>({})); if(!response.ok) throw new Error(data.error || 'Unable to create project.');
+    closeProjectModal(); document.getElementById('projectForm').reset();
+    document.getElementById('ccActiveProj').innerHTML=`Active project: <b>${escapeHtml(data.project.project_code)} / ${escapeHtml(data.project.name)}</b>`;
+    showActionNotice(`Project ${data.project.project_code} created. Add schedule, drawings and evidence next.`);
+  } catch(error) {
+    status.textContent=`Project was not created: ${error.message}`; status.style.color='var(--crit)';
+  } finally { submit.disabled=false; }
 });
 
 /* Search common SitePulse destinations without leaving the page. */

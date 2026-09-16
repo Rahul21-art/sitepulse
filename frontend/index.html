@@ -476,6 +476,32 @@
 
 <div id="actionNotice" role="status" aria-live="polite" style="position:fixed;right:24px;bottom:24px;z-index:1000;max-width:360px;padding:14px 18px;border:1px solid var(--signal);border-radius:8px;background:rgba(12,14,18,.96);color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.35);opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .25s ease,transform .25s ease;"></div>
 
+<div id="project-modal" style="position:fixed;inset:0;z-index:960;display:none;align-items:center;justify-content:center;background:rgba(6,7,9,.86);backdrop-filter:blur(8px);padding:20px;overflow:auto;">
+  <section role="dialog" aria-modal="true" aria-labelledby="projectModalTitle" style="width:min(780px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--base);border:1px solid var(--line);border-radius:10px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.46);">
+    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;">
+      <div><div class="eyebrow"><i></i> PROJECT FOUNDATION</div><h2 id="projectModalTitle" class="panel-title" style="font-size:24px;margin:7px 0;">Create a project</h2><p class="panel-desc">Creates a canonical project, initial revision, audit event and empty review-required state.</p></div>
+      <button id="projectModalClose" class="btn-secondary" type="button" aria-label="Close project wizard">Close</button>
+    </div>
+    <form id="projectForm" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+      <label>Project name *<input id="projectName" required maxlength="255" placeholder="Metro Corridor — Package A"></label>
+      <label>Project ID / code *<input id="projectCode" required maxlength="64" placeholder="SIH26122-A"></label>
+      <label>Client<input id="projectClient" maxlength="255" placeholder="Client organisation"></label>
+      <label>Contractor<input id="projectContractor" maxlength="255" placeholder="Contractor organisation"></label>
+      <label>Project manager<input id="projectManager" maxlength="255" placeholder="Name"></label>
+      <label>Site engineer<input id="projectEngineer" maxlength="255" placeholder="Name"></label>
+      <label>Project location<input id="projectLocation" maxlength="500" placeholder="City, State"></label>
+      <label>Project type<input id="projectType" maxlength="100" placeholder="Building, road, drainage…"></label>
+      <label>Start date<input id="projectStart" type="date"></label>
+      <label>Planned completion<input id="projectCompletion" type="date"></label>
+      <label>Total duration (days)<input id="projectDuration" type="number" min="0" step="1" placeholder="365"></label>
+      <label>Units<select id="projectUnits"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label>
+      <label style="grid-column:1/-1;">Project description<textarea id="projectDescription" maxlength="5000" placeholder="Scope, buildings, zones, constraints and other context."></textarea></label>
+      <div id="projectFormStatus" style="grid-column:1/-1;font-size:12px;color:var(--text-mute);">Required: project name and project ID. Schedule, drawings and evidence are added after creation.</div>
+      <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;"><button id="projectCancel" type="button" class="btn-secondary">Cancel</button><button id="projectSubmit" type="submit" class="btn-primary">Create Project</button></div>
+    </form>
+  </section>
+</div>
+
 <div id="demo-modal">
   <div class="demo-panel">
     <button class="demo-close" id="demoClose">

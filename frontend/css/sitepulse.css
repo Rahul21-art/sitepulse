@@ -419,3 +419,10 @@ footer{border-top:1px solid var(--line-soft);padding:50px 44px;display:flex;just
 .secure-email-note-title{font-family:var(--ff-mono);font-size:10.5px;letter-spacing:.06em;color:var(--ai);font-weight:600}
 .secure-email-note p{font-size:11px;line-height:1.55;color:var(--text-mute);margin:6px 0 0}
 .secure-email-note code{font-family:var(--ff-mono);color:var(--text)}
+
+/* Canonical project wizard */
+#projectForm label{display:flex;flex-direction:column;gap:6px;font-family:var(--ff-mono);font-size:10.5px;letter-spacing:.04em;color:var(--text-mute)}
+#projectForm input,#projectForm select,#projectForm textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:10px 11px;color:var(--text);font:400 13px var(--ff-sans);letter-spacing:normal}
+#projectForm textarea{min-height:84px;resize:vertical}
+#projectForm input:focus,#projectForm select:focus,#projectForm textarea:focus{outline:2px solid rgba(79,142,247,.45);border-color:var(--signal)}
+@media(max-width:640px){#projectForm{grid-template-columns:1fr!important}}
