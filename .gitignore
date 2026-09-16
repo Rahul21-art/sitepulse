@@ -7,4 +7,8 @@ npm-debug.log*
 *.log
 sent_emails_log.txt
 coverage/
+.venv/
+__pycache__/
+*.py[cod]
+services/processing/*.log
 .vscode/

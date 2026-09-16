@@ -19,6 +19,8 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 The starter service is contract-only. It must not be advertised as PaddleOCR, YOLO, IFC, or reconstruction processing until those modules and their tests are deployed.
 
+For the current upgrade, OpenCV image-quality/alignment and deterministic risk routes are implemented locally. Deploy the service independently, set `AI_SERVICE_URL` on Node, and add service-to-service authentication before Node submits jobs. PaddleOCR, YOLO, IFC parsing, COLMAP/OpenMVS and XGBoost remain separately provisioned worker profiles.
+
 ## Storage and queues
 
 Use S3-compatible private object storage plus signed URLs for user files. Add a queue/worker before enabling long-running OCR, CV, reconstruction, or rendering jobs. Do not upload files through GitHub Pages directly to the API without MIME, size, checksum, and authorization validation.
