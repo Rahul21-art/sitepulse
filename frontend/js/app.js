@@ -689,14 +689,15 @@ const photoInputs = [
   {input:'blueprintInput', preview:'blueprintPreview', file:'blueprintFile'},
   {input:'sitePhotoInput', preview:'sitePhotoPreview', file:'sitePhotoFile'}
 ];
-const comparisonState = { blueprintImage:null, siteImage:null, blueprintPoints:[], sitePoints:[], zone:[], zoneClosed:false, result:null };
+const comparisonState = { blueprintImage:null, siteImage:null, blueprintPoints:[], sitePoints:[], zone:[], zoneClosed:false, result:null, demo:false };
 const comparisonCanvases = {};
 
 function comparisonEl(id){ return document.getElementById(id); }
 function setComparisonGuidance(message){ comparisonEl('cvGuidance').textContent = message; }
 function setComparisonStatus(ready, message){
   const status = comparisonEl('cvStatus');
-  status.className = `cv-status ${ready ? 'ready' : 'pending'}`;
+  const state = typeof ready === 'string' ? ready : ready ? 'ready' : 'pending';
+  status.className = `cv-status ${state}`;
   status.textContent = message;
 }
 function prepareComparisonCanvases(){
@@ -731,7 +732,7 @@ function redrawSite(){
   comparisonState.sitePoints.forEach((p,index)=>drawPoint(ctx,p,index,'#5eead4'));
 }
 function resetComparison(keepImages=true){
-  comparisonState.blueprintPoints=[]; comparisonState.sitePoints=[]; comparisonState.zone=[]; comparisonState.zoneClosed=false; comparisonState.result=null;
+  comparisonState.blueprintPoints=[]; comparisonState.sitePoints=[]; comparisonState.zone=[]; comparisonState.zoneClosed=false; comparisonState.result=null; comparisonState.demo=false;
   comparisonEl('cvResults').hidden=true;
   redrawBlueprint(); redrawSite();
   setComparisonStatus(false, 'REAL CV RESULT UNAVAILABLE');
@@ -794,10 +795,23 @@ function inPolygon(x,y,points){
   return inside;
 }
 function percentile(values, ratio){ const sorted=values.slice().sort((a,b)=>a-b); return sorted[Math.min(sorted.length-1,Math.max(0,Math.floor(sorted.length*ratio)))]; }
-function runImageComparison(){
-  const {blueprintPoints,sitePoints,zone}=comparisonState;
-  if(!comparisonState.blueprintImage || !comparisonState.siteImage || blueprintPoints.length!==4 || sitePoints.length!==4 || !comparisonState.zoneClosed || zone.length<3){
-    setComparisonGuidance('REAL CV RESULT unavailable: upload both images, capture four matching point pairs, and close a planned zone with at least three vertices.'); return;
+function runImageComparison(mode='real'){
+  const {blueprintPoints,sitePoints}=comparisonState;
+  // A zone is optional. Real Run uses the full aligned image when no focused
+  // work area has been traced, so point-pair alignment alone can succeed.
+  if(comparisonState.zone.length >= 3 && !comparisonState.zoneClosed){ comparisonState.zoneClosed=true; redrawBlueprint(); }
+  if(comparisonState.zone.length < 3){
+    comparisonState.zone=[{x:1,y:1},{x:comparisonCanvases.blueprintCanvas.canvas.width-2,y:1},{x:comparisonCanvases.blueprintCanvas.canvas.width-2,y:comparisonCanvases.blueprintCanvas.canvas.height-2},{x:1,y:comparisonCanvases.blueprintCanvas.canvas.height-2}];
+    comparisonState.zoneClosed=true; redrawBlueprint();
+  }
+  const zone=comparisonState.zone;
+  const incomplete=[];
+  if(!comparisonState.blueprintImage || !comparisonState.siteImage) incomplete.push('two uploaded images');
+  if(blueprintPoints.length !== 4) incomplete.push(`4 blueprint points (${blueprintPoints.length}/4)`);
+  if(sitePoints.length !== 4) incomplete.push(`4 site-photo points (${sitePoints.length}/4)`);
+  if(incomplete.length){
+    setComparisonStatus(false,'REAL CV RESULT UNAVAILABLE');
+    setComparisonGuidance(`Real Run needs ${incomplete.join(', ')}. The planned zone is optional and defaults to the full aligned image.`); return;
   }
   const h=homography(blueprintPoints,sitePoints);
   if(!h){ setComparisonGuidance('REAL CV RESULT unavailable: the selected control points do not form a usable perspective transform. Reset them and choose four well-separated landmarks.'); return; }
@@ -829,11 +843,37 @@ function runImageComparison(){
   }
   diff.ctx.putImageData(diffData,0,0);
   const actual=Math.round(detectedPixels/plannedPixels*100), confidence=Math.round(Math.min(95,Math.max(20,100-Math.abs(50-sensitivity)*.6-(threshold<3?25:0))));
-  comparisonState.result={actual,confidence,threshold:Math.round(threshold),plannedPixels,detectedPixels};
+  comparisonState.result={actual,confidence,threshold:Math.round(threshold),plannedPixels,detectedPixels,mode};
   comparisonEl('actualProgress').value=actual;
   comparisonEl('cvMetrics').innerHTML=`<div>Measured progress<b>${actual}%</b></div><div>Detected image area<b>${Math.round(detectedPixels/plannedPixels*100)}%</b></div><div>Analysis confidence<b>${confidence}%</b></div><div>Edge threshold<b>${Math.round(threshold)}</b></div>`;
-  comparisonEl('cvResults').hidden=false; setComparisonStatus(true,'REAL CV RESULT READY');
-  setComparisonGuidance(`Measured from ${plannedPixels.toLocaleString()} pixels in the manually marked zone. The result has populated Actual progress; review it with the site engineer before reporting.`);
+  comparisonEl('cvResults').hidden=false;
+  if(mode === 'demo'){
+    setComparisonStatus('demo','DEMO RESULT READY');
+    setComparisonGuidance(`Paired demo uses SitePulse's supplied matched images (${plannedPixels.toLocaleString()} display pixels). It does not analyse your uploaded images and must not be used as a site-progress record. Select your four points and choose Real Run to exit demo mode.`);
+  } else {
+    setComparisonStatus(true,'REAL CV RESULT READY');
+    setComparisonGuidance(`Measured from ${plannedPixels.toLocaleString()} pixels in the manually marked zone. The result has populated Actual progress; review it with the site engineer before reporting.`);
+  }
+}
+function loadComparisonAsset(src){
+  return new Promise((resolve,reject)=>{ const image=new Image(); image.onload=()=>resolve(image); image.onerror=reject; image.src=src; });
+}
+async function runComparisonDemo(){
+  try {
+    const [blueprintImage,siteImage]=await Promise.all([loadComparisonAsset('assets/comparison-blueprint.svg'),loadComparisonAsset('assets/comparison-site.svg')]);
+    // Demo is intentionally just a paired visual preview. It preserves the
+    // user's uploads and points, performs no segmentation, and fills no
+    // progress value. Real Run is always required for an actual result.
+    drawContain(comparisonCanvases.alignedCanvas.ctx, siteImage, comparisonCanvases.alignedCanvas.canvas);
+    drawContain(comparisonCanvases.differenceCanvas.ctx, blueprintImage, comparisonCanvases.differenceCanvas.canvas);
+    comparisonEl('cvMetrics').innerHTML='<div>Mode<b>Demo preview</b></div><div>Test pair<b>Matched</b></div><div>CV calculation<b>Not run</b></div><div>Next step<b>Real Run</b></div>';
+    comparisonEl('cvResults').hidden=false;
+    setComparisonStatus('demo','DEMO OUTPUT READY');
+    setComparisonGuidance('This is a paired-image demo only: no segmentation, no progress calculation, and your uploaded images remain unchanged. Select four matching points on your uploads, then choose Real Run to perform a real comparison.');
+  } catch {
+    setComparisonStatus(false,'DEMO RESULT UNAVAILABLE');
+    setComparisonGuidance('The supplied demo images could not load. Check your network connection and try again.');
+  }
 }
 function initialiseImageComparison(){
   prepareComparisonCanvases(); redrawBlueprint(); redrawSite();
@@ -844,6 +884,7 @@ function initialiseImageComparison(){
   comparisonEl('cvCloseZone').addEventListener('click',()=>{ if(comparisonState.zone.length<3) return setComparisonGuidance('Add at least three planned-zone vertices before closing the zone.'); comparisonState.zoneClosed=true;redrawBlueprint();setComparisonGuidance('Planned zone is ready. Run the real image comparison.'); });
   comparisonEl('cvSensitivity').addEventListener('input',event=>comparisonEl('cvSensitivityValue').value=event.target.value);
   comparisonEl('runComparisonBtn').addEventListener('click',runImageComparison);
+  comparisonEl('runComparisonDemoBtn').addEventListener('click',runComparisonDemo);
 }
 photoInputs.forEach(({input,preview,file})=>{
   document.getElementById(input).addEventListener('change', event=>{
@@ -854,6 +895,7 @@ photoInputs.forEach(({input,preview,file})=>{
     previewEl.style.display = 'block';
     document.getElementById(file).textContent = `${selected.name} · ${(selected.size / 1024 / 1024).toFixed(1)} MB`;
     imageToComparison(selected, input === 'blueprintInput' ? 'blueprintImage' : 'siteImage');
+    if(document.getElementById('blueprintInput').files[0] && document.getElementById('sitePhotoInput').files[0]) comparisonEl('runComparisonDemoBtn').hidden=false;
   });
 });
 function escapeHtml(value){
@@ -1052,7 +1094,9 @@ function generatePhotoComparisonData(blueprint, sitePhoto, activity, actualProgr
   const cv = comparisonState.result;
   const planFeatures = `Uploaded blueprint <code>${escapeHtml(blueprint.name)}</code> is the plan reference for ${escapeHtml(zone)}. The marked planned zone and four manual control-point pairs are retained in this browser session for the comparison.`;
   const siteFeatures = `Uploaded site image <code>${escapeHtml(sitePhoto.name)}</code> is the current-condition reference. No construction objects, dimensions, or milestones are inferred beyond the image measurement.`;
-  const discrepancyText = cv
+  const discrepancyText = cv && cv.mode === 'demo'
+    ? `<b>DEMO RESULT:</b> SitePulse ran its supplied matched demonstration images and calculated <b>${cv.actual}%</b> detected image area. This is a product demonstration only; it did not analyse <code>${escapeHtml(sitePhoto.name)}</code> and must not be used as a site-progress record.`
+    : cv
     ? `<b>REAL CV RESULT:</b> perspective alignment used four user-selected matching points. An edge-structure segmentation measured <b>${cv.actual}%</b> detected image area inside the marked planned zone (${cv.detectedPixels.toLocaleString()} of ${cv.plannedPixels.toLocaleString()} pixels; heuristic confidence ${cv.confidence}%). This supplies the actual-progress input and is not a semantic proof of construction completion.`
     : `<b>MANUAL / FALLBACK RESULT:</b> no completed image comparison is available, so the <b>${actualProgress}%</b> actual progress came from the verified field entry. SitePulse does not claim visual alignment or object detection in this report.`;
   const nextStepText = cv
