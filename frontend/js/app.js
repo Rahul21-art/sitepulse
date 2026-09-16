@@ -895,7 +895,12 @@ photoInputs.forEach(({input,preview,file})=>{
     previewEl.style.display = 'block';
     document.getElementById(file).textContent = `${selected.name} · ${(selected.size / 1024 / 1024).toFixed(1)} MB`;
     imageToComparison(selected, input === 'blueprintInput' ? 'blueprintImage' : 'siteImage');
-    if(document.getElementById('blueprintInput').files[0] && document.getElementById('sitePhotoInput').files[0]) comparisonEl('runComparisonDemoBtn').hidden=false;
+    if(document.getElementById('blueprintInput').files[0] && document.getElementById('sitePhotoInput').files[0]){
+      comparisonEl('runComparisonDemoBtn').hidden=false;
+      // Make the non-computational paired demo immediately visible after both
+      // uploads. It remains until the visitor explicitly chooses Real Run.
+      runComparisonDemo();
+    }
   });
 });
 function escapeHtml(value){
