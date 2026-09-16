@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <rect width="1200" height="760" fill="#f7fbff"/>
+  <g stroke="#163d68" fill="none" stroke-width="8">
+    <rect x="90" y="90" width="1020" height="580"/>
+    <rect x="180" y="190" width="320" height="300"/><rect x="700" y="190" width="320" height="300"/>
+    <path d="M500 340H700M600 190V490M180 340H1020"/>
+    <path d="M240 250H440M240 420H440M760 250H960M760 420H960" stroke-width="4"/>
+  </g>
+  <g fill="#4f8ef7" opacity=".25"><rect x="180" y="190" width="320" height="300"/><rect x="700" y="190" width="320" height="300"/></g>
+  <g fill="#163d68" font-family="Arial, sans-serif"><text x="90" y="55" font-size="30" font-weight="700">TEST BLUEPRINT — STRUCTURAL WORK ZONE</text><text x="195" y="175" font-size="22">PLANNED AREA A</text><text x="715" y="175" font-size="22">PLANNED AREA B</text><text x="90" y="720" font-size="19">Use the four outer corners as matching control points. Trace Area A or Area B.</text></g>
+  <g fill="#5eead4"><circle cx="90" cy="90" r="13"/><circle cx="1110" cy="90" r="13"/><circle cx="1110" cy="670" r="13"/><circle cx="90" cy="670" r="13"/></g>
+</svg>

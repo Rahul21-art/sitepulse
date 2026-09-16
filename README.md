@@ -103,6 +103,8 @@ The computed coverage percentage fills the assessment's actual-progress field an
 
 This MVP uses image structure/edge coverage, not an object-recognition construction model. A site engineer must review the aligned image and difference map before accepting the value as verified progress.
 
+For a reliable first test, use the matched pair in `frontend/assets/comparison-blueprint.svg` and `frontend/assets/comparison-site.svg`. Click the four cyan outer-corner markers in the same order on each image, then trace either interior planned area.
+
 ## Production deployment
 
 GitHub Pages can host only the static frontend; it cannot execute this Node backend. For the full application, deploy the Node server and PostgreSQL database on a backend-capable host and point the frontend/API to that deployment.

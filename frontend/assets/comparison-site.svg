@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs><linearGradient id="ground" x2="0" y2="1"><stop stop-color="#b9c8d2"/><stop offset="1" stop-color="#65717c"/></linearGradient><pattern id="gravel" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="5" cy="4" r="2" fill="#9da8ae"/><circle cx="17" cy="15" r="3" fill="#4a555d"/></pattern></defs>
+  <rect width="1200" height="760" fill="url(#ground)"/>
+  <rect x="90" y="90" width="1020" height="580" rx="3" fill="url(#gravel)" stroke="#3c4850" stroke-width="8"/>
+  <g stroke="#202a30" stroke-width="13" fill="#788993"><rect x="180" y="190" width="320" height="300"/><rect x="700" y="190" width="320" height="300"/></g>
+  <g stroke="#d6b44b" stroke-width="8"><path d="M180 340H500M700 340H1020M600 190V490"/><path d="M240 190V490M440 190V490M760 190V490M960 190V490"/></g>
+  <g fill="#27333b"><rect x="215" y="225" width="95" height="80"/><rect x="365" y="380" width="95" height="75"/><rect x="750" y="220" width="220" height="200"/></g>
+  <g fill="#5eead4"><circle cx="90" cy="90" r="13"/><circle cx="1110" cy="90" r="13"/><circle cx="1110" cy="670" r="13"/><circle cx="90" cy="670" r="13"/></g>
+  <g fill="#fff" font-family="Arial, sans-serif"><text x="110" y="630" font-size="28" font-weight="700">CURRENT SITE TEST IMAGE</text><text x="110" y="655" font-size="16">Matched geometry; Area A shows partial structural coverage.</text></g>
+</svg>
